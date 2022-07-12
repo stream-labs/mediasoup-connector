@@ -29,10 +29,10 @@ public:
 public:
 	// Outgoing
 	void push_outgoing_videoFrame(rtc::scoped_refptr<webrtc::I420Buffer>);
-	void pop_outgoing_videoFrame(std::vector<rtc::scoped_refptr<webrtc::I420Buffer>>& output);
+	void pop_outgoing_videoFrames(std::vector<rtc::scoped_refptr<webrtc::I420Buffer>>& output);
 
 	void push_outgoing_audioFrame(const uint8_t** data, const int frames);
-	void pop_outgoing_audioFrame(std::vector<std::unique_ptr<SoupSendAudioFrame>>& output);
+	void pop_outgoing_audioFrames(std::vector<std::unique_ptr<SoupSendAudioFrame>>& output);
 
 	void assignOutgoingAudioParams(const audio_format audioformat, const speaker_layout speakerLayout, const int bytesPerSample, const int numChannels, const int samples_per_sec);
 

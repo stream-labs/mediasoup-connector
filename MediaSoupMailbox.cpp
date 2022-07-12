@@ -80,7 +80,7 @@ void MediaSoupMailbox::push_outgoing_audioFrame(const uint8_t** data, const int 
 		m_outgoing_audio_data[channel].append((char*)data[channel], channelBufferSize);
 }
 
-void MediaSoupMailbox::pop_outgoing_audioFrame(std::vector<std::unique_ptr<SoupSendAudioFrame>>& output)
+void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<SoupSendAudioFrame>>& output)
 {
 	std::lock_guard<std::mutex> grd(m_mtx_outgoing_audio);
 
@@ -143,7 +143,7 @@ void MediaSoupMailbox::push_outgoing_videoFrame(rtc::scoped_refptr<webrtc::I420B
 	m_outgoing_video_data.push_back(ptr);
 }
 
-void MediaSoupMailbox::pop_outgoing_videoFrame(std::vector<rtc::scoped_refptr<webrtc::I420Buffer>>& output)
+void MediaSoupMailbox::pop_outgoing_videoFrames(std::vector<rtc::scoped_refptr<webrtc::I420Buffer>>& output)
 {
 	std::lock_guard<std::mutex> grd(m_mtx_outgoing_video);
 	m_outgoing_video_data.swap(output);

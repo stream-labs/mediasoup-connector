@@ -536,7 +536,7 @@ void MediaSoupTransceiver::AudioThread()
 	while (m_sendingAudio)
 	{
 		std::vector<std::unique_ptr<MediaSoupMailbox::SoupSendAudioFrame>> frames;
-		m_producerMailbox->pop_outgoing_audioFrame(frames);
+		m_producerMailbox->pop_outgoing_audioFrames(frames);
 
 		if (!frames.empty())
 		{

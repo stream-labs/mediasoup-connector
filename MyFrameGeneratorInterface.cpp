@@ -21,7 +21,7 @@ void MyFrameGeneratorInterface::ChangeResolution(size_t width, size_t height)
 webrtc::test::FrameGeneratorInterface::VideoFrameData MyFrameGeneratorInterface::NextFrame() 
 {
 	std::vector<rtc::scoped_refptr<webrtc::I420Buffer>> frames;
-	m_mailbox.pop_outgoing_videoFrame(frames);
+	m_mailbox.pop_outgoing_videoFrames(frames);
 
 	if (!frames.empty())
 		m_lastFrame = frames[frames.size() - 1];
