@@ -42,7 +42,7 @@ MediaSoupTransceiver::~MediaSoupTransceiver()
 
 bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_deviceRtpCapabilities, json& output_deviceSctpCapabilities)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_device != nullptr)
 	{
@@ -168,7 +168,7 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 
 bool MediaSoupTransceiver::CreateReceiver(const std::string& recvTransportId, const json& iceParameters, const json& iceCandidates, const json& dtlsParameters, nlohmann::json* sctpParameters /*= nullptr*/, nlohmann::json* iceServers /*= nullptr*/)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_recvTransport != nullptr)
 	{
@@ -226,7 +226,7 @@ bool MediaSoupTransceiver::CreateReceiver(const std::string& recvTransportId, co
 
 bool MediaSoupTransceiver::CreateSender(const std::string& id, const json& iceParameters, const json& iceCandidates, const json& dtlsParameters, nlohmann::json* iceServers /*= nullptr*/)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_sendTransport != nullptr)
 	{
@@ -275,7 +275,7 @@ bool MediaSoupTransceiver::CreateSender(const std::string& id, const json& icePa
 
 bool MediaSoupTransceiver::CreateVideoProducerTrack(const nlohmann::json* ecodings /*= nullptr*/, const nlohmann::json* codecOptions /*= nullptr*/, const nlohmann::json* codec /*= nullptr*/)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_device == nullptr)
 	{
@@ -348,7 +348,7 @@ rtc::scoped_refptr<webrtc::VideoTrackInterface> MediaSoupTransceiver::CreateProd
 
 bool MediaSoupTransceiver::CreateAudioProducerTrack()
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_device == nullptr)
 	{
@@ -417,7 +417,7 @@ rtc::scoped_refptr<webrtc::AudioTrackInterface> MediaSoupTransceiver::CreateProd
 
 bool MediaSoupTransceiver::CreateAudioConsumer(const std::string& id, const std::string& producerId, json* rtpParameters, obs_source_t* source)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_device == nullptr)
 	{
@@ -451,7 +451,7 @@ bool MediaSoupTransceiver::CreateAudioConsumer(const std::string& id, const std:
 
 bool MediaSoupTransceiver::CreateVideoConsumer(const std::string& id, const std::string& producerId, json* rtpParameters)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_device == nullptr)
 	{
@@ -554,7 +554,7 @@ void MediaSoupTransceiver::AudioThread()
 
 void MediaSoupTransceiver::StopReceiveTransport()
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	if (m_recvTransport)
 		m_recvTransport->Close();
@@ -587,7 +587,7 @@ void MediaSoupTransceiver::StopReceiveTransport()
 
 void MediaSoupTransceiver::StopSendTransport()
 {	
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	m_sendingAudio = false;
 
@@ -630,7 +630,7 @@ void MediaSoupTransceiver::StopSendTransport()
                                                                             
 void MediaSoupTransceiver::Stop()
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	m_sendingAudio = false;
 
@@ -784,18 +784,7 @@ void MediaSoupTransceiver::AssignConsumer(const std::string& id, mediasoupclient
 	}
 
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
-
-	auto itr = m_dataConsumers.find(id);
-
-	if (itr != m_dataConsumers.end())
-	{
-		if (itr->second.first != nullptr)
-			itr->second.first->Close();
-
-		delete itr->second.first;
-		itr = m_dataConsumers.erase(itr);
-	}
-
+	StopConsumerById(id);
 	m_dataConsumers[id] = { value, std::move(sink) };
 }
 
@@ -816,7 +805,7 @@ std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetConsumerMailbox(const
 
 void MediaSoupTransceiver::StopConsumerById(const std::string& id)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 	std::lock_guard<std::recursive_mutex> grd2(m_consumerMutex);
 
 	auto itr = m_dataConsumers.find(id);
@@ -833,7 +822,7 @@ void MediaSoupTransceiver::StopConsumerById(const std::string& id)
 
 std::string MediaSoupTransceiver::StopConsumerByProducerId(const std::string& id)
 {
-	std::lock_guard<std::mutex> grd(m_transportMutex);
+	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 	std::lock_guard<std::recursive_mutex> grd2(m_consumerMutex);
 	std::string result;
 

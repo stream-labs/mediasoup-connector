@@ -125,7 +125,7 @@ private:
 	std::atomic<bool> m_sendingAudio{ false };
 	
 	std::mutex m_stateMutex;
-	std::mutex m_transportMutex;
+	std::recursive_mutex m_transportMutex;
 
 	std::unique_ptr<mediasoupclient::Device> m_device;
 
