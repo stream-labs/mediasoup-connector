@@ -75,8 +75,8 @@ public:
 	// Returns the ID of the consumer that was stopped
 	std::string StopConsumerByProducerId(const std::string& id);
 
-	MediaSoupMailbox* GetConsumerMailbox(const std::string& id);
-	MediaSoupMailbox* GetProducerMailbox() { return m_producerMailbox.get(); }
+	std::shared_ptr<MediaSoupMailbox> GetConsumerMailbox(const std::string& id);
+	std::shared_ptr<MediaSoupMailbox> GetProducerMailbox() { return m_producerMailbox; }
 	mediasoupclient::Device* GetDevice() const { return m_device.get(); }
 
 	const std::string GetSenderId();
@@ -125,7 +125,7 @@ private:
 	std::atomic<bool> m_sendingAudio{ false };
 	
 	std::mutex m_stateMutex;
-	std::mutex m_externalMutex;
+	std::recursive_mutex m_transportMutex;
 
 	std::unique_ptr<mediasoupclient::Device> m_device;
 
@@ -141,7 +141,7 @@ private:
 	public:
 		virtual ~GenericSink() {}
 		ConsumerType m_consumerType;
-		std::unique_ptr<MediaSoupMailbox> m_mailbox;
+		std::shared_ptr<MediaSoupMailbox> m_mailbox;
 		obs_source_t* m_obs_source{ nullptr };
 	};
 
@@ -160,7 +160,7 @@ private:
 	rtc::scoped_refptr<MyProducerAudioDeviceModule> m_MyProducerAudioDeviceModule;
 	rtc::scoped_refptr<webrtc::AudioDeviceModule> m_DefaultDeviceCore;
 	std::unique_ptr<webrtc::TaskQueueFactory> m_DefaultDeviceCore_TaskQueue;
-	std::unique_ptr<MediaSoupMailbox> m_producerMailbox;
+	std::shared_ptr<MediaSoupMailbox> m_producerMailbox;
 
 // Producer
 private:
