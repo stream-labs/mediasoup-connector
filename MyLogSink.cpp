@@ -2,16 +2,14 @@
 
 #include "MyLogSink.h"
 
-// This is a singleton
-MyLogSink::MyLogSink()
+void MyLogSink::Start()
 {
 	rtc::LogMessage::AddLogToStream(this, rtc::WARNING);
 }
 
-MyLogSink::~MyLogSink()
+void MyLogSink::Stop()
 {
-	// We're a singleton so if we go away then webrtc has as well so I think this is redundant... ??
-	//rtc::LogMessage::RemoveLogToStream(this);
+	rtc::LogMessage::RemoveLogToStream(this);
 }
 
 void MyLogSink::OnLogMessage(const std::string& message, rtc::LoggingSeverity severity)

@@ -47,10 +47,8 @@ static void* msoup_create(obs_data_t* settings, obs_source_t* source)
 
 	obs_source_set_audio_active(source, true);
 
-	// Captures webrtc debug msgs
-	MyLogSink::instance();
-	
-	++MediaSoupInterface::instance().m_sourceCounter;
+	if (++MediaSoupInterface::instance().m_sourceCounter == 1)
+		MyLogSink::instance().Start();
 	
 	return data;
 }
@@ -69,7 +67,10 @@ static void msoup_destroy(void* data)
 
 	// We're the last one, final cleanup
 	if (MediaSoupInterface::instance().m_sourceCounter <= 0)
+	{
 		MediaSoupInterface::instance().reset();
+		MyLogSink::instance().Stop();
+	}
 
 	delete sourceInfo;
 }

@@ -7,7 +7,8 @@
 class MyLogSink : public rtc::LogSink
 {
 public:
-	~MyLogSink();
+	void Start();
+	void Stop();
 
 	static MyLogSink& instance()
 	{
@@ -20,5 +21,5 @@ protected:
 	void OnLogMessage(const std::string& message, rtc::LoggingSeverity severity) final;
 
 private:
-	MyLogSink();
+	MyLogSink() { }
 };
