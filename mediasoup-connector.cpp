@@ -292,34 +292,33 @@ static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs
 	//VIDEO_FORMAT_YVYU
 	case VIDEO_FORMAT_YUY2:
 		libyuv::YUY2ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());	
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
 	case VIDEO_FORMAT_UYVY:
 		libyuv::UYVYToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());	
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
 	case VIDEO_FORMAT_RGBA:
 		libyuv::RGBAToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());	
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
 	case VIDEO_FORMAT_BGRA:
-		libyuv::BGRAToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());	
-		mailbox->push_outgoing_videoFrame(dest);
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());	
 		break;
 	case VIDEO_FORMAT_I422:
 		libyuv::I422ToI420(frame->data[0],  static_cast<int>(frame->linesize[0]), frame->data[1],  static_cast<int>(frame->linesize[1]), frame->data[2],  static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
 	case VIDEO_FORMAT_I444:
 		libyuv::I444ToI420(frame->data[0],  static_cast<int>(frame->linesize[0]), frame->data[1],  static_cast<int>(frame->linesize[1]), frame->data[2],  static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
 	case VIDEO_FORMAT_NV12:
 		libyuv::NV12ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1],  static_cast<int>(frame->linesize[1]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
-		mailbox->push_outgoing_videoFrame(dest);
 		break;
+	default:
+		return frame;
 	}
-	
+
+	if (frame->flip)
+		dest = webrtc::I420Buffer::Rotate(*dest, webrtc::VideoRotation::kVideoRotation_180);
+
+	mailbox->push_outgoing_videoFrame(dest);
 	return frame;
 }
 
