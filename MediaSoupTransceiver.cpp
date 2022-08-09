@@ -146,9 +146,9 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 	thr.join();
 
 	auto factory = webrtc::CreatePeerConnectionFactory(
-		m_networkThread_Producer.get(),
-		m_workerThread_Producer.get(),
-		m_signalingThread_Producer.get(),
+		m_networkThread_Consumer.get(),
+		m_networkThread_Consumer.get(),
+		m_networkThread_Consumer.get(),
 		m_DefaultDeviceCore,
 		webrtc::CreateBuiltinAudioEncoderFactory(),
 		webrtc::CreateBuiltinAudioDecoderFactory(),
