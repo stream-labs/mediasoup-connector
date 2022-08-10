@@ -378,8 +378,8 @@ static void msoup_fsvideo_destroy(void* data)
 
 static obs_properties_t* msoup_fsvideo_properties(void* data)
 {
-	obs_properties_t* props = obs_properties_create();
-	return props;
+	UNUSED_PARAMETER(data);
+	return obs_properties_create();
 }
 
 static void msoup_filter_raw_video(void* data, struct video_data* streaming_frame, struct video_data* recording_frame)
@@ -391,6 +391,9 @@ static void msoup_filter_raw_video(void* data, struct video_data* streaming_fram
 
 static void msoup_fsvideo_filter_offscreen_render(void* param, uint32_t cx, uint32_t cy)
 {
+	UNUSED_PARAMETER(cx);
+	UNUSED_PARAMETER(cy);
+
 	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(param);
 	obs_source_t* target = obs_filter_get_parent(vars->source);
 
@@ -460,17 +463,19 @@ static void msoup_fsvideo_video_render(void* data, gs_effect_t* effect)
 
 static void msoup_fsvideo_video_tick(void* data, float seconds)
 {
-
+	UNUSED_PARAMETER(data);
+	UNUSED_PARAMETER(seconds);
 }
 
 static void msoup_fsvideo_update_settings(void* data, obs_data_t* settings)
 {
-	//
+	UNUSED_PARAMETER(data);
+	UNUSED_PARAMETER(settings);
 }
 
 static void msoup_fsvideo_defaults(obs_data_t* settings)
 {
-	//
+	UNUSED_PARAMETER(settings);
 }
 
 bool obs_module_load(void)
