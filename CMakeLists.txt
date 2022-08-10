@@ -11,22 +11,27 @@ find_package(OpenSSL)
 if(NOT WEBRTC_INCLUDE_PATH)
 	message(FATAL_ERROR "mediasoup-connector: WEBRTC_INCLUDE_PATH not provided")
 endif()
+file(TO_CMAKE_PATH ${WEBRTC_INCLUDE_PATH} WEBRTC_INCLUDE_PATH)
 
 if(NOT WEBRTC_LIB_PATH)
 	message(FATAL_ERROR "mediasoup-connector: WEBRTC_LIB_PATH missing")
 endif()
+file(TO_CMAKE_PATH ${WEBRTC_LIB_PATH} WEBRTC_LIB_PATH)
 
 if(NOT MEDIASOUP_INCLUDE_PATH)
 	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_INCLUDE_PATH missing")
 endif()
+file(TO_CMAKE_PATH ${MEDIASOUP_INCLUDE_PATH} MEDIASOUP_INCLUDE_PATH)
 
 if(NOT MEDIASOUP_LIB_PATH)
 	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_LIB_PATH missing")
 endif()
+file(TO_CMAKE_PATH ${MEDIASOUP_LIB_PATH} MEDIASOUP_LIB_PATH)
 
 if(NOT MEDIASOUP_SDP_LIB_PATH)
 	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_SDP_LIB_PATH missing")
 endif()
+file(TO_CMAKE_PATH ${MEDIASOUP_SDP_LIB_PATH} MEDIASOUP_SDP_LIB_PATH)
 
 # Common name for openssl
 if(NOT OPENSSL_INCLUDE_DIR)
