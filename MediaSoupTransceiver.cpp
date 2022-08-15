@@ -295,6 +295,12 @@ bool MediaSoupTransceiver::CreateVideoProducerTrack(const nlohmann::json* ecodin
 		return false;
 	}
 
+	if (m_sendTransport == nullptr)
+	{
+		m_lastErorMsg = "Transport not created";
+		return false;
+	}
+
 	if (m_device->CanProduce("video"))
 	{
 		auto videoTrack = CreateProducerVideoTrack(m_factory_Producer, std::to_string(rtc::CreateRandomId()));
@@ -425,6 +431,12 @@ bool MediaSoupTransceiver::CreateAudioConsumer(const std::string& id, const std:
 		return false;
 	}
 
+	if (m_recvTransport == nullptr)
+	{
+		m_lastErorMsg = "Transport not created";
+		return false;
+	}
+
 	mediasoupclient::Consumer* consumer = nullptr;
 
 	try
@@ -456,6 +468,12 @@ bool MediaSoupTransceiver::CreateVideoConsumer(const std::string& id, const std:
 	if (m_device == nullptr)
 	{
 		m_lastErorMsg = "Device not created";
+		return false;
+	}
+
+	if (m_recvTransport == nullptr)
+	{
+		m_lastErorMsg = "Transport not created";
 		return false;
 	}
 
@@ -566,7 +584,7 @@ void MediaSoupTransceiver::StopReceiveTransport()
 		for (auto& itr : m_dataConsumers)
 		{
 			if (itr.second.first != nullptr)
-				itr.second.first->Close();
+				TryClose(itr.second.first);
 
 			delete itr.second.first;
 		}
@@ -603,14 +621,14 @@ void MediaSoupTransceiver::StopSendTransport()
 		// Cleanup the producers attached to it
 		if (m_dataProducer_Audio != nullptr)
 		{
-			m_dataProducer_Audio->Close();
+			TryClose(m_dataProducer_Audio);
 			delete m_dataProducer_Audio;
 			m_dataProducer_Audio = nullptr;
 		}
 
 		if (m_dataProducer_Video != nullptr)
 		{
-			m_dataProducer_Video->Close();
+			TryClose(m_dataProducer_Video);
 			delete m_dataProducer_Video;
 			m_dataProducer_Video = nullptr;
 		}
@@ -626,6 +644,32 @@ void MediaSoupTransceiver::StopSendTransport()
 	//m_networkThread_Producer = nullptr;
 	//m_signalingThread_Producer = nullptr;
 	//m_workerThread_Producer = nullptr;
+}
+
+void MediaSoupTransceiver::TryClose(mediasoupclient::Producer* producer)
+{
+	try
+	{
+		// "May throw"
+		producer->Close();
+	}
+	catch (...)
+	{
+		blog(LOG_WARNING, "Exception closing Producer object %s", producer->GetId().c_str());
+	}
+}
+
+void MediaSoupTransceiver::TryClose(mediasoupclient::Consumer* dataConsumer)
+{
+	try
+	{
+		// "May throw"
+		dataConsumer->Close();
+	}
+	catch (...)
+	{
+		blog(LOG_WARNING, "Exception closing Consumer object %s", dataConsumer->GetId().c_str());
+	}
 }
                                                                             
 void MediaSoupTransceiver::Stop()
@@ -651,14 +695,14 @@ void MediaSoupTransceiver::Stop()
 
 		if (m_dataProducer_Audio != nullptr)
 		{
-			m_dataProducer_Audio->Close();
+			TryClose(m_dataProducer_Audio);
 			delete m_dataProducer_Audio;
 			m_dataProducer_Audio = nullptr;
 		}
 
 		if (m_dataProducer_Video != nullptr)
 		{
-			m_dataProducer_Video->Close();
+			TryClose(m_dataProducer_Video);
 			delete m_dataProducer_Video;
 			m_dataProducer_Video = nullptr;
 		}
@@ -670,7 +714,7 @@ void MediaSoupTransceiver::Stop()
 		for (auto& itr : m_dataConsumers)
 		{
 			if (itr.second.first != nullptr)
-				itr.second.first->Close();
+				TryClose(itr.second.first);
 
 			delete itr.second.first;
 		}
@@ -813,7 +857,7 @@ void MediaSoupTransceiver::StopConsumerById(const std::string& id)
 	if (itr != m_dataConsumers.end())
 	{
 		if (itr->second.first != nullptr)
-			itr->second.first->Close();
+			TryClose(itr->second.first);
 
 		delete itr->second.first;
 		itr = m_dataConsumers.erase(itr);
@@ -838,7 +882,7 @@ std::string MediaSoupTransceiver::StopConsumerByProducerId(const std::string& id
 		if (itr->second.first->GetProducerId() == id)
 		{
 			result = itr->second.first->GetId();
-			itr->second.first->Close();
+			TryClose(itr->second.first);
 			delete itr->second.first;
 			itr = m_dataConsumers.erase(itr);
 		}

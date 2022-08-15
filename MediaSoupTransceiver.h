@@ -106,6 +106,8 @@ public:
 private:
 	void Stop();
 	void AudioThread();
+	void TryClose(mediasoupclient::Producer* producer);
+	void TryClose(mediasoupclient::Consumer* dataConsumer);
 
 	std::string GetConnectionState(mediasoupclient::Transport* transport);
 
