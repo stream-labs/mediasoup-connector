@@ -83,12 +83,24 @@ set resultPath=.\webrtc_install
  
 xcopy %sourcePath%\*.h %resultPath%\  /s /c /y /r
 
+:: Also need to copy some cpp files too 
+:: buildtools\third_party\libc++\trunk\test\libcxx\selftest\
+:: api\test\
+:: media\base\
+:: pc\test\
+:: test\
+:: rtc_base\task_queue_for_test.cc
+:: xcopy %sourcePath%\*.h %resultPath%\  /s /c /y /r
+
 copy %CD%\%CHECKOUT_DIR%\src\%OUT_DIR%\obj\webrtc.lib %resultPath%\  
 
 echo  "Build media soup client"
 git clone https://github.com/versatica/libmediasoupclient.git --recursive
 cd libmediasoupclient
 git checkout 8b36a91520a0f6ea3ed506814410176a9fc71d62
+
+:: Need to appy patch to build libmediasoupclient with correct MT version
+git apply scripts/support_vs_mt_build.patch
 
 mkdir build 
 cd build 
