@@ -1,0 +1,19 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index c77b43d..65bf492 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.5)
++cmake_minimum_required(VERSION 3.20)
+ 
+ project(mediasoupclient LANGUAGES CXX)
+ 
+@@ -49,6 +49,8 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+ 	endif()
+ endif()
+ 
++set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
++
+ if (${MEDIASOUPCLIENT_BUILD_TESTS})
+ 	add_subdirectory(test)
+ endif()
