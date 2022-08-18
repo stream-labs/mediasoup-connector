@@ -91,6 +91,11 @@ target_compile_definitions(webrtc-testlibs PUBLIC
 project(mediasoup-connector)
 set(MODULE_DESCRIPTION "Streamlabs Join")
 
+if(MSVC)
+	set(mediasoup-connector_PLATFORM_DEPS
+		w32-pthreads)
+endif()
+
 # WEBRTC_INCLUDE_PATH must use forward slashes
 set(mediasoup-connector_SOURCES
 	mediasoup-connector.cpp
@@ -121,13 +126,14 @@ add_library(mediasoup-connector MODULE
 	
 target_compile_options(mediasoup-connector PRIVATE /wd4100)
 
+
 target_link_libraries(mediasoup-connector
 	libobs
-	w32-pthreads
 	webrtc-testlibs
 	${WEBRTC_LIB_PATH}
 	${MEDIASOUP_LIB_PATH}
-	${MEDIASOUP_SDP_LIB_PATH})
+	${MEDIASOUP_SDP_LIB_PATH}
+	${mediasoup-connector_PLATFORM_DEPS})
 
 set_target_properties(mediasoup-connector PROPERTIES FOLDER "plugins")
 set_property(TARGET mediasoup-connector PROPERTY CXX_STANDARD 14)
