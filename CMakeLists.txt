@@ -158,7 +158,7 @@ set_property(TARGET mediasoup-connector PROPERTY CXX_STANDARD 14)
 if(MSVC)
 	target_compile_definitions(webrtc-testlibs PUBLIC
 		WEBRTC_WIN
-		NOMINMAX>
+		NOMINMAX
 		WIN32_LEAN_AND_MEAN
 	)
 endif()

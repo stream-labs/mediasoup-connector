@@ -386,13 +386,6 @@ static obs_properties_t* msoup_fsvideo_properties(void* data)
 	return obs_properties_create();
 }
 
-static void msoup_filter_raw_video(void* data, struct video_data* streaming_frame, struct video_data* recording_frame)
-{
-	UNUSED_PARAMETER(data);
-	UNUSED_PARAMETER(streaming_frame);
-	UNUSED_PARAMETER(recording_frame);
-}
-
 static void msoup_fsvideo_filter_offscreen_render(void* param, uint32_t cx, uint32_t cy)
 {
 	UNUSED_PARAMETER(cx);
