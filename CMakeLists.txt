@@ -34,8 +34,8 @@ endif()
 file(TO_CMAKE_PATH ${MEDIASOUP_SDP_LIB_PATH} MEDIASOUP_SDP_LIB_PATH)
 
 # Common name for openssl
-if(NOT OPENSSL_INCLUDE_DIR)
-	message(FATAL_ERROR "mediasoup-connector: OPENSSL_INCLUDE_DIR missing")
+if(NOT OPENSSL_FOUND)
+	message(FATAL_ERROR "mediasoup-connector: OPENSSL_FOUND failed")
 endif()
 
 foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
@@ -65,24 +65,38 @@ set(webrtc-test_SOURCES
 	
 include_directories(${WEBRTC_INCLUDE_PATH})
 include_directories(${WEBRTC_INCLUDE_PATH}/third_party/abseil-cpp)
+include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 
 add_library(webrtc-testlibs STATIC
 	${webrtc-test_SOURCES})
 
 # webrtc's warnings, we don't need to see them)
-target_compile_options(webrtc-testlibs PRIVATE /wd4100 /wd4244 /wd4267)
+if(MSVC)
+	target_compile_options(webrtc-testlibs PRIVATE /wd4100 /wd4244 /wd4267)
+endif()
 
 target_link_libraries(webrtc-testlibs
 	${WEBRTC_LIB_PATH})
-	
+
 set_property(TARGET webrtc-testlibs PROPERTY CXX_STANDARD 14)
 
 # Compile definitions for libwebrtc.
-target_compile_definitions(webrtc-testlibs PUBLIC
-	$<$<PLATFORM_ID:Windows>:WEBRTC_WIN>
-	$<$<PLATFORM_ID:Windows>:NOMINMAX>
-	$<$<PLATFORM_ID:Windows>:WIN32_LEAN_AND_MEAN>
-)
+if(MSVC)
+	target_compile_definitions(webrtc-testlibs PUBLIC
+		WEBRTC_WIN
+		NOMINMAX>
+		WIN32_LEAN_AND_MEAN
+	)
+endif()
+
+if(APPLE)
+	target_compile_definitions(webrtc-testlibs PUBLIC
+		WEBRTC_POSIX
+		NOMINMAX
+	)
+	
+	include_directories(webrtc-testlibs mac)
+endif()
 
 # ----------------------
 # -- mediasoup PLUGIN --
@@ -90,6 +104,11 @@ target_compile_definitions(webrtc-testlibs PUBLIC
 
 project(mediasoup-connector)
 set(MODULE_DESCRIPTION "Streamlabs Join")
+
+if(MSVC)
+	set(mediasoup-connector_PLATFORM_DEPS
+		w32-pthreads)
+endif()
 
 # WEBRTC_INCLUDE_PATH must use forward slashes
 set(mediasoup-connector_SOURCES
@@ -115,31 +134,97 @@ include_directories(${MEDIASOUP_SDP_INCLUDE_PATH})
 
 include_directories(${WEBRTC_INCLUDE_PATH})
 include_directories(${WEBRTC_INCLUDE_PATH}/third_party/abseil-cpp)
+include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
 	
-target_compile_options(mediasoup-connector PRIVATE /wd4100)
+if(MSVC)
+	target_compile_options(mediasoup-connector PRIVATE /wd4100)
+endif()
 
 target_link_libraries(mediasoup-connector
 	libobs
-	w32-pthreads
 	webrtc-testlibs
 	${WEBRTC_LIB_PATH}
 	${MEDIASOUP_LIB_PATH}
-	${MEDIASOUP_SDP_LIB_PATH})
+	${MEDIASOUP_SDP_LIB_PATH}
+	${mediasoup-connector_PLATFORM_DEPS})
 
 set_target_properties(mediasoup-connector PROPERTIES FOLDER "plugins")
 set_property(TARGET mediasoup-connector PROPERTY CXX_STANDARD 14)
 
 # Compile definitions for libwebrtc.
-target_compile_definitions(mediasoup-connector PUBLIC
-	$<$<PLATFORM_ID:Windows>:WEBRTC_WIN>
-	$<$<PLATFORM_ID:Windows>:NOMINMAX>
-	$<$<PLATFORM_ID:Windows>:WIN32_LEAN_AND_MEAN>
-)
+if(MSVC)
+	target_compile_definitions(webrtc-testlibs PUBLIC
+		WEBRTC_WIN
+		NOMINMAX>
+		WIN32_LEAN_AND_MEAN
+	)
+endif()
 
-set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
-set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+if(APPLE)
+	target_compile_definitions(webrtc-testlibs PUBLIC
+		WEBRTC_POSIX
+		NOMINMAX
+	)
+	
+	include_directories(webrtc-testlibs mac)
+endif()
+
+if(APPLE)
+	find_library(APPLE_CoreServices CoreServices)
+	find_library(APPLE_CoreFoundation CoreFoundation)
+	find_library(APPLE_AudioUnit AudioUnit)
+	find_library(APPLE_AudioToolbox AudioToolbox)
+	find_library(APPLE_CoreAudio CoreAudio)
+	find_library(APPLE_Foundation Foundation)
+	find_library(APPLE_ApplicationServices ApplicationServices)
+	
+	if (NOT APPLE_CoreServices)
+		message(FATAL_ERROR "APPLE_CoreServices not found")
+	endif()
+
+	if (NOT APPLE_CoreFoundation)
+		message(FATAL_ERROR "APPLE_CoreFoundation not found")
+	endif()
+
+	if (NOT APPLE_AudioUnit)
+		message(FATAL_ERROR "APPLE_AudioUnit not found")
+	endif()
+
+	if (NOT APPLE_AudioUnit)
+		message(FATAL_ERROR "APPLE_AudioUnit not found")
+	endif()
+
+	if (NOT APPLE_AudioToolbox)
+		message(FATAL_ERROR "APPLE_AudioToolbox not found")
+	endif()
+
+	if (NOT APPLE_CoreAudio)
+		message(FATAL_ERROR "APPLE_CoreAudio not found")
+	endif()
+
+	if (NOT APPLE_Foundation)
+		message(FATAL_ERROR "APPLE_Foundation not found")
+	endif()
+
+	if (NOT APPLE_ApplicationServices)
+		message(FATAL_ERROR "APPLE_ApplicationServices not found")
+	endif()
+
+	target_link_libraries(mediasoup-connector ${APPLE_CoreServices})
+	target_link_libraries(mediasoup-connector ${APPLE_CoreFoundation})
+	target_link_libraries(mediasoup-connector ${APPLE_AudioUnit})
+	target_link_libraries(mediasoup-connector ${APPLE_AudioToolbox})
+	target_link_libraries(mediasoup-connector ${APPLE_CoreAudio})
+	target_link_libraries(mediasoup-connector ${APPLE_Foundation})
+	target_link_libraries(mediasoup-connector ${APPLE_ApplicationServices})
+	
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations")
+endif()	
+
+#set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+#set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 
 install_obs_plugin(mediasoup-connector)

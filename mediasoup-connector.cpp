@@ -9,6 +9,10 @@
 #include <util/dstr.h>
 #include <media-io/video-frame.h>
 
+#ifndef _WIN32
+    #define UNREFERENCED_PARAMETER(a) do { (void)(a); } while (0)
+#endif
+
 /**
 * Source
 */
