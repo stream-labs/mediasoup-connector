@@ -61,8 +61,8 @@ void MediaSoupInterface::applyVideoFrameToObsTexture(webrtc::VideoFrame& frame, 
 	int height = int(float(i420buffer->height()) * scale);
 	i420buffer = rtc::scoped_refptr<webrtc::I420BufferInterface>(i420buffer->Scale(width, height)->ToI420());
 
-    int biBitCount = 32;
-    int biSizeImage = i420buffer->width() *  i420buffer->height() * (biBitCount >> 3);
+	int biBitCount = 32;
+	int biSizeImage = i420buffer->width() *  i420buffer->height() * (biBitCount >> 3);
 	
 	std::unique_ptr<uint8_t[]> abgrBuffer;
 	abgrBuffer.reset(new uint8_t[biSizeImage]); 
