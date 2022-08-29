@@ -9,33 +9,39 @@ set(MEDIASOUP_SDP_INCLUDE_PATH "" CACHE STRING "sdptransform include path")
 find_package(OpenSSL)
 
 if(NOT WEBRTC_INCLUDE_PATH)
-	message(FATAL_ERROR "mediasoup-connector: WEBRTC_INCLUDE_PATH not provided")
+	message(WARNING "mediasoup-connector: WEBRTC_INCLUDE_PATH not provided")
+	return()
 endif()
 file(TO_CMAKE_PATH ${WEBRTC_INCLUDE_PATH} WEBRTC_INCLUDE_PATH)
 
 if(NOT WEBRTC_LIB_PATH)
-	message(FATAL_ERROR "mediasoup-connector: WEBRTC_LIB_PATH missing")
+	message(WARNING "mediasoup-connector: WEBRTC_LIB_PATH missing")
+	return()
 endif()
 file(TO_CMAKE_PATH ${WEBRTC_LIB_PATH} WEBRTC_LIB_PATH)
 
 if(NOT MEDIASOUP_INCLUDE_PATH)
-	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_INCLUDE_PATH missing")
+	message(WARNING "mediasoup-connector: MEDIASOUP_INCLUDE_PATH missing")
+	return()
 endif()
 file(TO_CMAKE_PATH ${MEDIASOUP_INCLUDE_PATH} MEDIASOUP_INCLUDE_PATH)
 
 if(NOT MEDIASOUP_LIB_PATH)
-	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_LIB_PATH missing")
+	message(WARNING "mediasoup-connector: MEDIASOUP_LIB_PATH missing")
+	return()
 endif()
 file(TO_CMAKE_PATH ${MEDIASOUP_LIB_PATH} MEDIASOUP_LIB_PATH)
 
 if(NOT MEDIASOUP_SDP_LIB_PATH)
-	message(FATAL_ERROR "mediasoup-connector: MEDIASOUP_SDP_LIB_PATH missing")
+	message(WARNING "mediasoup-connector: MEDIASOUP_SDP_LIB_PATH missing")
+	return()
 endif()
 file(TO_CMAKE_PATH ${MEDIASOUP_SDP_LIB_PATH} MEDIASOUP_SDP_LIB_PATH)
 
 # Common name for openssl
 if(NOT OPENSSL_FOUND)
-	message(FATAL_ERROR "mediasoup-connector: OPENSSL_FOUND failed")
+	message(WARNING "mediasoup-connector: OPENSSL_FOUND failed")
+	return()
 endif()
 
 foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
