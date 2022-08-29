@@ -52,7 +52,7 @@ if(MSVC)
 endif()
 
 if(APPLE)
-	target_compile_definitions(webrtc-testlibs PUBLIC WEBRTC_POSIX)
+	list(APPEND webrtc_COMMON_COMPILE_DEFS WEBRTC_POSIX)
 endif()
 
 # ----------------
