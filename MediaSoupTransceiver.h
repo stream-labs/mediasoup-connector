@@ -7,9 +7,9 @@
 
 #include <json.hpp>
 #include <atomic>
-#include <media-io\audio-io.h>
-#include <media-io\audio-resampler.h>
-#include <util\platform.h>
+#include <media-io/audio-io.h>
+#include <media-io/audio-resampler.h>
+#include <util/platform.h>
 
 #include "api/video/i420_buffer.h"
 

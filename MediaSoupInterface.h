@@ -55,7 +55,7 @@ public:
 
 	rtc::scoped_refptr<webrtc::I420Buffer> getProducerFrameBuffer(const int width, const int height);
 
-	std::atomic<int> m_sourceCounter = 0;
+	std::atomic<int> m_sourceCounter;
 
 private:	
 	bool m_threadInProgress{ false };
