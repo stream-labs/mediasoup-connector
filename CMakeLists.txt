@@ -44,6 +44,16 @@ foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
         string(REGEX REPLACE "/MD" "/MT" ${var} "${${var}}")
       endif()
     endforeach()
+	
+set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)	
+		
+if(MSVC)
+	list(APPEND webrtc_COMMON_COMPILE_DEFS WEBRTC_WIN WIN32_LEAN_AND_MEAN)
+endif()
+
+if(APPLE)
+	target_compile_definitions(webrtc-testlibs PUBLIC WEBRTC_POSIX)
+endif()
 
 # ----------------
 # -- webrtc LIB --
@@ -80,23 +90,7 @@ target_link_libraries(webrtc-testlibs
 
 set_property(TARGET webrtc-testlibs PROPERTY CXX_STANDARD 14)
 
-# Compile definitions for libwebrtc.
-if(MSVC)
-	target_compile_definitions(webrtc-testlibs PUBLIC
-		WEBRTC_WIN
-		NOMINMAX
-		WIN32_LEAN_AND_MEAN
-	)
-endif()
-
-if(APPLE)
-	target_compile_definitions(webrtc-testlibs PUBLIC
-		WEBRTC_POSIX
-		NOMINMAX
-	)
-	
-	include_directories(webrtc-testlibs mac)
-endif()
+target_compile_definitions(webrtc-testlibs PUBLIC ${webrtc_COMMON_COMPILE_DEFS})
 
 # ----------------------
 # -- mediasoup PLUGIN --
@@ -154,25 +148,11 @@ target_link_libraries(mediasoup-connector
 set_target_properties(mediasoup-connector PROPERTIES FOLDER "plugins")
 set_property(TARGET mediasoup-connector PROPERTY CXX_STANDARD 14)
 
-# Compile definitions for libwebrtc.
-if(MSVC)
-	target_compile_definitions(webrtc-testlibs PUBLIC
-		WEBRTC_WIN
-		NOMINMAX
-		WIN32_LEAN_AND_MEAN
-	)
-endif()
+target_compile_definitions(mediasoup-connector PUBLIC ${webrtc_COMMON_COMPILE_DEFS})
 
 if(APPLE)
-	target_compile_definitions(webrtc-testlibs PUBLIC
-		WEBRTC_POSIX
-		NOMINMAX
-	)
+	include_directories(mediasoup-connector mac)
 	
-	include_directories(webrtc-testlibs mac)
-endif()
-
-if(APPLE)
 	find_library(APPLE_CoreServices CoreServices)
 	find_library(APPLE_CoreFoundation CoreFoundation)
 	find_library(APPLE_AudioUnit AudioUnit)
