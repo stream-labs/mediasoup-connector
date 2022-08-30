@@ -529,6 +529,8 @@ bool obs_module_load(void)
 	mediasoup_filter_video.get_defaults		= msoup_fvideo_defaults;
 	mediasoup_filter_video.get_properties		= msoup_fvideo_properties;
 	mediasoup_filter_video.filter_video		= msoup_fvideo_filter_video;
+
+	obs_register_source(&mediasoup_filter_video);
 	
 	// Filter (Video Sync)
 	struct obs_source_info mediasoup_filter_video_s	= {};
