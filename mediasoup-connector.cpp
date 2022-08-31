@@ -333,7 +333,7 @@ static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs
 
 	if (frame->flip)
 		dest = webrtc::I420Buffer::Rotate(*dest, webrtc::VideoRotation::kVideoRotation_180);
-	
+
 	mailbox->push_outgoing_videoFrame(dest);
 	return frame;
 }
