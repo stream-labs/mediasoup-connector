@@ -32,7 +32,7 @@ static const char* msoup_getname(void* unused)
 
 // Create
 static void* msoup_create(obs_data_t* settings, obs_source_t* source)
-{	
+{
 	MediaSoupInterface::ObsSourceInfo* data = new MediaSoupInterface::ObsSourceInfo{};
 	data->m_obs_source = source;
 
@@ -49,6 +49,7 @@ static void* msoup_create(obs_data_t* settings, obs_source_t* source)
 	proc_handler_add(ph, "void func_stop_receiver(in string input, out string output)", ConnectorFrontApi::func_stop_receiver, data);
 	proc_handler_add(ph, "void func_stop_sender(in string input, out string output)", ConnectorFrontApi::func_stop_sender, data);
 	proc_handler_add(ph, "void func_stop_consumer(in string input, out string output)", ConnectorFrontApi::func_stop_consumer, data);
+	proc_handler_add(ph, "void func_stop_producer(in string input, out string output)", ConnectorFrontApi::func_stop_producer, data);
 
 	obs_source_set_audio_active(source, true);
 
@@ -211,7 +212,7 @@ static const char* msoup_faudio_name(void* unused)
 // Create
 static void* msoup_faudio_create(obs_data_t* settings, obs_source_t* source)
 {
-	return source;
+	return settings;
 }
 
 // Destroy
@@ -222,14 +223,18 @@ static void msoup_faudio_destroy(void* data)
 
 static struct obs_audio_data* msoup_faudio_filter_audio(void* data, struct obs_audio_data* audio)
 {
-	if (!MediaSoupInterface::instance().getTransceiver()->AudioProducerReady())
+	std::string producerId = obs_data_get_string(static_cast<obs_data_t*>(data), "producerId");
+
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return audio;
 
-	const struct audio_output_info* aoi = audio_output_get_info(obs_get_audio());
+	if (auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId))
+	{
+		const struct audio_output_info* aoi = audio_output_get_info(obs_get_audio());
+		mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
+		mailbox->push_outgoing_audioFrame((const uint8_t**)audio->data, audio->frames);
+	}
 
-	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox();
-	mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
-	mailbox->push_outgoing_audioFrame((const uint8_t**)audio->data, audio->frames);
 	return audio;
 }
 
@@ -265,7 +270,7 @@ static const char* msoup_fvideo_get_name(void* unused)
 // Create
 static void* msoup_fvideo_create(obs_data_t* settings, obs_source_t* source)
 {
-	return source;
+	return settings;
 }
 
 // Destroy
@@ -282,11 +287,17 @@ static obs_properties_t* msoup_fvideo_properties(void* data)
 
 static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs_source_frame* frame)
 {
-	if (!MediaSoupInterface::instance().getTransceiver()->VideoProducerReady())
+	std::string producerId = obs_data_get_string(static_cast<obs_data_t*>(data), "producerId");
+
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return frame;
-	
-	rtc::scoped_refptr<webrtc::I420Buffer> dest = MediaSoupInterface::instance().getProducerFrameBuffer(frame->width, frame->height);
-	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox();
+
+	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId);
+
+	if (mailbox == nullptr)
+		return frame;
+
+	rtc::scoped_refptr<webrtc::I420Buffer> dest = mailbox->getProducerFrameBuffer(frame->width, frame->height);
 
 	switch (frame->format)
 	{
@@ -322,7 +333,7 @@ static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs
 
 	if (frame->flip)
 		dest = webrtc::I420Buffer::Rotate(*dest, webrtc::VideoRotation::kVideoRotation_180);
-
+	
 	mailbox->push_outgoing_videoFrame(dest);
 	return frame;
 }
@@ -444,7 +455,7 @@ static void msoup_fsvideo_filter_offscreen_render(void* param, uint32_t cx, uint
 		sframe.height = vars->height;
 		sframe.flip = false;
 		sframe.format = VIDEO_FORMAT_BGRA;
-		msoup_fvideo_filter_video(nullptr, &sframe);
+		msoup_fvideo_filter_video(obs_source_get_settings(vars->source), &sframe);
 
 		// Release pointer to data from gs
 		gs_stagesurface_unmap(vars->stagesurface);

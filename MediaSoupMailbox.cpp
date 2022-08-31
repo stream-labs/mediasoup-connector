@@ -13,6 +13,14 @@ MediaSoupMailbox::~MediaSoupMailbox()
 
 }
 
+rtc::scoped_refptr<webrtc::I420Buffer> MediaSoupMailbox::getProducerFrameBuffer(const int width, const int height)
+{
+	if (m_producerFrameBuffer == nullptr || m_producerFrameBuffer->width() != width || m_producerFrameBuffer->height() != height)
+		m_producerFrameBuffer = webrtc::I420Buffer::Create(width, height);
+
+	return m_producerFrameBuffer;
+}
+
 void MediaSoupMailbox::push_received_videoFrame(std::unique_ptr<webrtc::VideoFrame> ptr)
 {
 	std::lock_guard<std::mutex> grd(m_mtx_received_video);

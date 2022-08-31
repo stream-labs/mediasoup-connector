@@ -4,7 +4,7 @@
 #include "MediaSoupTransceiver.h"
 #include "MediaSoupMailbox.h"
 
-MyFrameGeneratorInterface::MyFrameGeneratorInterface(int width, int height, OutputType type, MediaSoupMailbox& mailbox) :
+MyFrameGeneratorInterface::MyFrameGeneratorInterface(int width, int height, OutputType type, std::shared_ptr<MediaSoupMailbox> mailbox) :
 	m_mailbox(mailbox),
 	m_width(width),
 	m_height(height)
@@ -21,7 +21,7 @@ void MyFrameGeneratorInterface::ChangeResolution(size_t width, size_t height)
 webrtc::test::FrameGeneratorInterface::VideoFrameData MyFrameGeneratorInterface::NextFrame() 
 {
 	std::vector<rtc::scoped_refptr<webrtc::I420Buffer>> frames;
-	m_mailbox.pop_outgoing_videoFrames(frames);
+	m_mailbox->pop_outgoing_videoFrames(frames);
 
 	if (!frames.empty())
 		m_lastFrame = frames[frames.size() - 1];
@@ -29,7 +29,7 @@ webrtc::test::FrameGeneratorInterface::VideoFrameData MyFrameGeneratorInterface:
 	return VideoFrameData(m_lastFrame, absl::nullopt);
 }
 
-FrameGeneratorCapturerVideoTrackSource::FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, MediaSoupMailbox& mailbox) :
+FrameGeneratorCapturerVideoTrackSource::FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, std::shared_ptr<MediaSoupMailbox> mailbox) :
 	VideoTrackSource(false),
 	task_queue_factory_(webrtc::CreateDefaultTaskQueueFactory()),
 	is_screencast_(is_screencast) 

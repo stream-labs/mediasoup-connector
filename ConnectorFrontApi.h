@@ -20,6 +20,7 @@ struct ConnectorFrontApi
 	static void func_stop_receiver(void* data, calldata_t* cd);
 	static void func_stop_sender(void* data, calldata_t* cd);
 	static void func_stop_consumer(void* data, calldata_t* cd);
+	static void func_stop_producer(void* data, calldata_t* cd);
 };
 
 struct ConnectorFrontApiHelper

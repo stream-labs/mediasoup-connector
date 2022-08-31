@@ -21,6 +21,8 @@ public:
 public:
 	~MediaSoupMailbox();
 
+	rtc::scoped_refptr<webrtc::I420Buffer> getProducerFrameBuffer(const int width, const int height);
+
 public:
 	// Receive
 	void push_received_videoFrame(std::unique_ptr<webrtc::VideoFrame> ptr);
@@ -56,4 +58,6 @@ private:
 	audio_format m_obs_audioformat = AUDIO_FORMAT_UNKNOWN;
 	speaker_layout m_obs_speakerLayout = SPEAKERS_UNKNOWN;
 	audio_resampler_t* m_obs_resampler = nullptr;
+	
+	rtc::scoped_refptr<webrtc::I420Buffer> m_producerFrameBuffer;
 };
