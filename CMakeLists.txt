@@ -38,13 +38,6 @@ if(NOT OPENSSL_INCLUDE_DIR)
 	message(FATAL_ERROR "mediasoup-connector: OPENSSL_INCLUDE_DIR missing")
 endif()
 
-foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
-      CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
-      if(${var} MATCHES "/MD")
-        string(REGEX REPLACE "/MD" "/MT" ${var} "${${var}}")
-      endif()
-    endforeach()
-
 # ----------------
 # -- webrtc LIB --
 # ----------------
@@ -70,7 +63,7 @@ add_library(webrtc-testlibs STATIC
 	${webrtc-test_SOURCES})
 
 # webrtc's warnings, we don't need to see them)
-target_compile_options(webrtc-testlibs PRIVATE /wd4100 /wd4244 /wd4267)
+target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
 
 target_link_libraries(webrtc-testlibs
 	${WEBRTC_LIB_PATH})
@@ -124,7 +117,7 @@ include_directories(${WEBRTC_INCLUDE_PATH}/third_party/abseil-cpp)
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
 	
-target_compile_options(mediasoup-connector PRIVATE /wd4100)
+target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
 
 
 target_link_libraries(mediasoup-connector
