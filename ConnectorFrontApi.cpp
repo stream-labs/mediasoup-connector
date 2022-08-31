@@ -42,6 +42,13 @@ void ConnectorFrontApi::func_stop_consumer(void* data, calldata_t* cd)
 		sourceInfo->m_consumer_video.clear();
 }
 
+void ConnectorFrontApi::func_stop_producer(void* data, calldata_t* cd)
+{
+	std::string input = calldata_string(cd, "input");	
+	blog(LOG_DEBUG, "func_stop_producer %s", input.c_str());
+	MediaSoupInterface::instance().getTransceiver()->StopProducerById(input);
+}
+
 void ConnectorFrontApi::func_connect_result(void* data, calldata_t* cd)
 {
 	std::string input = calldata_string(cd, "input");	

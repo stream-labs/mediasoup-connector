@@ -86,14 +86,6 @@ void MediaSoupInterface::ensureDrawTexture(const int w, const int h, MediaSoupIn
 	sourceInfo.m_obs_scene_texture = gs_texture_create(w, h, GS_RGBA, 1, NULL, GS_DYNAMIC);
 }
 
-rtc::scoped_refptr<webrtc::I420Buffer> MediaSoupInterface::getProducerFrameBuffer(const int width, const int height)
-{
-	if (m_producerFrameBuffer == nullptr || m_producerFrameBuffer->width() != width || m_producerFrameBuffer->height() != height)
-		m_producerFrameBuffer = webrtc::I420Buffer::Create(width, height);
-
-	return m_producerFrameBuffer;
-}
-
 void MediaSoupInterface::joinWaitingThread()
 {
 	if (m_connectionThread != nullptr && m_connectionThread->joinable())

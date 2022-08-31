@@ -10,7 +10,7 @@ class MediaSoupMailbox;
 class MyFrameGeneratorInterface : public webrtc::test::FrameGeneratorInterface
 {
 public:
-	MyFrameGeneratorInterface(int width, int height, OutputType type, MediaSoupMailbox& mailbox);
+	MyFrameGeneratorInterface(int width, int height, OutputType type, std::shared_ptr<MediaSoupMailbox> mailbox);
 
 	void ChangeResolution(size_t width, size_t height) override;
 	
@@ -20,7 +20,7 @@ private:
 	const int m_width;
 	const int m_height;
 
-	MediaSoupMailbox& m_mailbox;
+	std::shared_ptr<MediaSoupMailbox> m_mailbox;
 	rtc::scoped_refptr<webrtc::I420Buffer> m_lastFrame;
 };
 
@@ -39,7 +39,7 @@ public:
 		int height = kDefaultHeight;
 	};
 
-	FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, MediaSoupMailbox& mailbox);
+	FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, std::shared_ptr<MediaSoupMailbox> mailbox);
 	~FrameGeneratorCapturerVideoTrackSource();
 
 	void Start();

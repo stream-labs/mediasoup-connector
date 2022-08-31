@@ -55,11 +55,10 @@ public:
 	bool CreateSender(const std::string& id, const json& iceParameters, const json& iceCandidates, const json& dtlsParameters, nlohmann::json* iceServers = nullptr);
 	bool CreateAudioConsumer(const std::string& id, const std::string& producerId, json* rtpParameters, obs_source_t* source);
 	bool CreateVideoConsumer(const std::string& id, const std::string& producerId, json* rtpParameters);
-	bool CreateVideoProducerTrack(const nlohmann::json* ebcodings = nullptr, const nlohmann::json* codecOptions = nullptr,  const nlohmann::json* codec = nullptr);
-	bool CreateAudioProducerTrack();
+	bool CreateVideoProducerTrack(const std::string& id, const nlohmann::json* ebcodings = nullptr, const nlohmann::json* codecOptions = nullptr,  const nlohmann::json* codec = nullptr);
+	bool CreateAudioProducerTrack(const std::string& id);
 
-	bool AudioProducerReady();
-	bool VideoProducerReady();
+	bool ProducerReady(const std::string& id);
 	bool ConsumerReady(const std::string& id);
 	bool ConsumerReadyAtLeastOne();
 
@@ -71,12 +70,14 @@ public:
 	void StopReceiveTransport();
 	void StopSendTransport();
 	void StopConsumerById(const std::string& id);
-
+	void StopProducerById(const std::string& id);
+	
 	// Returns the ID of the consumer that was stopped
 	std::string StopConsumerByProducerId(const std::string& id);
 
 	std::shared_ptr<MediaSoupMailbox> GetConsumerMailbox(const std::string& id);
-	std::shared_ptr<MediaSoupMailbox> GetProducerMailbox() { return m_producerMailbox; }
+	std::shared_ptr<MediaSoupMailbox> GetProducerMailbox(const std::string& id);
+
 	mediasoupclient::Device* GetDevice() const { return m_device.get(); }
 
 	const std::string GetSenderId();
@@ -105,7 +106,7 @@ public:
 
 private:
 	void Stop();
-	void AudioThread();
+	void AudioThread(std::shared_ptr<MediaSoupMailbox> mailbox);
 	void TryClose(mediasoupclient::Producer* producer);
 	void TryClose(mediasoupclient::Consumer* dataConsumer);
 
@@ -114,8 +115,8 @@ private:
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateProducerFactory();
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateConsumerFactory();
 
-	rtc::scoped_refptr<webrtc::VideoTrackInterface> CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& /*label*/);
-	rtc::scoped_refptr<webrtc::AudioTrackInterface> CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& /*label*/);
+	rtc::scoped_refptr<webrtc::AudioTrackInterface> CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& label);
+	rtc::scoped_refptr<webrtc::VideoTrackInterface> CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& label, std::shared_ptr<MediaSoupMailbox> ptr);
 
 	json m_dtlsParameters_local;
 	
@@ -123,6 +124,7 @@ private:
 	std::string m_myBroadcasterId;
 	std::string m_mediasoupVersion;
 	std::string m_lastErorMsg;
+	std::string m_audioProducer;
 	std::thread m_audioThread;
 	std::atomic<bool> m_sendingAudio{ false };
 	
@@ -162,7 +164,6 @@ private:
 	rtc::scoped_refptr<MyProducerAudioDeviceModule> m_MyProducerAudioDeviceModule;
 	rtc::scoped_refptr<webrtc::AudioDeviceModule> m_DefaultDeviceCore;
 	std::unique_ptr<webrtc::TaskQueueFactory> m_DefaultDeviceCore_TaskQueue;
-	std::shared_ptr<MediaSoupMailbox> m_producerMailbox;
 
 // Producer
 private:
@@ -175,10 +176,9 @@ private:
 	mediasoupclient::PeerConnection::Options m_producerOptions;
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory_Producer;
 
-	// Producers
-	mediasoupclient::Producer* m_dataProducer_Audio{ nullptr };
-	mediasoupclient::Producer* m_dataProducer_Video{ nullptr };
 
+	// id, Producers
+	std::map<std::string, std::pair<mediasoupclient::Producer*, std::shared_ptr<MediaSoupMailbox>>> m_dataProducers;
 
 // Consumer
 private:
@@ -194,7 +194,7 @@ private:
 
 // Thread safe assignment
 private:
-	void AssignProducer(mediasoupclient::Producer*& ref, mediasoupclient::Producer* value);
+	void AssignProducer(const std::string& id, mediasoupclient::Producer* value, std::shared_ptr<MediaSoupMailbox> mailbox);
 	void AssignConsumer(const std::string& id, mediasoupclient::Consumer* value, std::unique_ptr<GenericSink> sink);
 
 	std::recursive_mutex m_consumerMutex;

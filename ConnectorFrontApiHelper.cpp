@@ -209,39 +209,45 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string& kind, calld
 		return false;
 	}
 
-	if (kind == "audio" && MediaSoupInterface::instance().getTransceiver()->AudioProducerReady())
+	json jsonInput;
+	std::string producerId;
+
+	try
 	{
-		blog(LOG_WARNING, "%s createProducerTrack audio but UploadAudioReady", obs_module_description());
+		jsonInput = json::parse(input);
+		producerId = jsonInput["id"].get<std::string>();
+	}
+	catch (...)
+	{
+		blog(LOG_WARNING, "%s createProducerTrack audio bad json", obs_module_description());
 		return false;
 	}
 
-	if (kind == "video" && MediaSoupInterface::instance().getTransceiver()->VideoProducerReady())
+	if (MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 	{
-		blog(LOG_WARNING, "%s createProducerTrack video but UploadVideoReady", obs_module_description());
+		blog(LOG_WARNING, "%s createProducerTrack audio but ProducerReady already", obs_module_description());
 		return false;
 	}
 
-	auto func = [](const std::string kind, const std::string input)
+	auto func = [](const std::string kind, const std::string producerId, json jsonInput)
 	{
 		try
 		{
 			if (kind == "audio")
 			{
-				MediaSoupInterface::instance().getTransceiver()->CreateAudioProducerTrack();
+				MediaSoupInterface::instance().getTransceiver()->CreateAudioProducerTrack(producerId);
 			}
 			else if (kind == "video")
-			{			
-				json jsonInput;
+			{
 				json ecodings;
 				json codecOptions;
 				json codec;
 
-				try { jsonInput = json::parse(input); } catch (...) { }
 				try { ecodings = jsonInput["encodings"]; } catch (...) {}
 				try { codecOptions = jsonInput["codecOptions"]; } catch (...) { }
 				try { codec = jsonInput["codec"]; } catch (...) { }
 
-				MediaSoupInterface::instance().getTransceiver()->CreateVideoProducerTrack(ecodings.empty() ? nullptr : &ecodings, codecOptions.empty() ? nullptr : &codecOptions, codec.empty() ? nullptr : &codec);
+				MediaSoupInterface::instance().getTransceiver()->CreateVideoProducerTrack(producerId, ecodings.empty() ? nullptr : &ecodings, codecOptions.empty() ? nullptr : &codecOptions, codec.empty() ? nullptr : &codec);
 			}
 			else
 			{
@@ -258,7 +264,7 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string& kind, calld
 	
 	MediaSoupInterface::instance().setThreadIsProgress(true);
 	MediaSoupInterface::instance().setExpectingProduceFollowup(true);
-	std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, kind, input);
+	std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, kind, producerId, jsonInput);
 	auto timeStart = std::clock();
 
 	while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting() && !MediaSoupInterface::instance().isProduceWaiting())
@@ -310,12 +316,6 @@ bool ConnectorFrontApiHelper::createAudioProducerTrack(calldata_t* cd, const std
 		return false;
 	}
 
-	if (MediaSoupInterface::instance().getTransceiver()->AudioProducerReady())
-	{
-		blog(LOG_WARNING, "%s createAudioProducerTrack but AudioProducerReady", obs_module_description());
-		return false;
-	}
-
 	return createProducerTrack("audio", cd, input);
 }
 
@@ -326,12 +326,6 @@ bool ConnectorFrontApiHelper::createVideoProducerTrack(calldata_t* cd, const std
 	if (!MediaSoupInterface::instance().getTransceiver()->SenderCreated())
 	{
 		blog(LOG_WARNING, "%s createVideoProducerTrack but not senderReady", obs_module_description());
-		return false;
-	}
-
-	if (MediaSoupInterface::instance().getTransceiver()->VideoProducerReady())
-	{
-		blog(LOG_WARNING, "%s createVideoProducerTrack but already UploadVideoReady=true", obs_module_description());
 		return false;
 	}
 
