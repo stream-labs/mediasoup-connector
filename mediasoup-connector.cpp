@@ -7,6 +7,11 @@
 #include <third_party/libyuv/include/libyuv.h>
 #include <util/platform.h>
 #include <util/dstr.h>
+#include <media-io/video-frame.h>
+
+#ifndef _WIN32
+    #define UNREFERENCED_PARAMETER(a) do { (void)(a); } while (0)
+#endif
 
 /**
 * Source
@@ -27,7 +32,7 @@ static const char* msoup_getname(void* unused)
 
 // Create
 static void* msoup_create(obs_data_t* settings, obs_source_t* source)
-{	
+{
 	MediaSoupInterface::ObsSourceInfo* data = new MediaSoupInterface::ObsSourceInfo{};
 	data->m_obs_source = source;
 
@@ -44,6 +49,7 @@ static void* msoup_create(obs_data_t* settings, obs_source_t* source)
 	proc_handler_add(ph, "void func_stop_receiver(in string input, out string output)", ConnectorFrontApi::func_stop_receiver, data);
 	proc_handler_add(ph, "void func_stop_sender(in string input, out string output)", ConnectorFrontApi::func_stop_sender, data);
 	proc_handler_add(ph, "void func_stop_consumer(in string input, out string output)", ConnectorFrontApi::func_stop_consumer, data);
+	proc_handler_add(ph, "void func_stop_producer(in string input, out string output)", ConnectorFrontApi::func_stop_producer, data);
 
 	obs_source_set_audio_active(source, true);
 
@@ -217,14 +223,26 @@ static void msoup_faudio_destroy(void* data)
 
 static struct obs_audio_data* msoup_faudio_filter_audio(void* data, struct obs_audio_data* audio)
 {
-	if (!MediaSoupInterface::instance().getTransceiver()->AudioProducerReady())
+	auto source = static_cast<obs_source_t*>(data);
+	auto parent = obs_filter_get_parent(source);
+	auto settings = obs_source_get_settings(source);
+	std::string producerId = obs_data_get_string(settings, "producerId");
+	obs_data_release(settings);
+
+	if (obs_source_muted(parent))
 		return audio;
 
-	const struct audio_output_info* aoi = audio_output_get_info(obs_get_audio());
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
+		return audio;
 
-	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox();
-	mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
-	mailbox->push_outgoing_audioFrame((const uint8_t**)audio->data, audio->frames);
+	if (auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId))
+	{
+		const struct audio_output_info* aoi = audio_output_get_info(obs_get_audio());
+		mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
+		mailbox->assignOutgoingVolume(obs_source_get_volume(parent));
+		mailbox->push_outgoing_audioFrame((const uint8_t**)audio->data, audio->frames);
+	}
+
 	return audio;
 }
 
@@ -248,7 +266,7 @@ static void msoup_faudio_save(void* data, obs_data_t* settings)
 }
 
 /**
-* Filter (Video)
+* Filter (Video Async)
 */
 
 static const char* msoup_fvideo_get_name(void* unused)
@@ -260,7 +278,7 @@ static const char* msoup_fvideo_get_name(void* unused)
 // Create
 static void* msoup_fvideo_create(obs_data_t* settings, obs_source_t* source)
 {
-	return source;
+	return settings;
 }
 
 // Destroy
@@ -277,11 +295,17 @@ static obs_properties_t* msoup_fvideo_properties(void* data)
 
 static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs_source_frame* frame)
 {
-	if (!MediaSoupInterface::instance().getTransceiver()->VideoProducerReady())
+	std::string producerId = obs_data_get_string(static_cast<obs_data_t*>(data), "producerId");
+
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return frame;
-	
-	rtc::scoped_refptr<webrtc::I420Buffer> dest = MediaSoupInterface::instance().getProducerFrameBuffer(frame->width, frame->height);
-	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox();
+
+	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId);
+
+	if (mailbox == nullptr)
+		return frame;
+
+	rtc::scoped_refptr<webrtc::I420Buffer> dest = mailbox->getProducerFrameBuffer(frame->width, frame->height);
 
 	switch (frame->format)
 	{
@@ -332,6 +356,144 @@ static void msoup_fvideo_defaults(obs_data_t* settings)
 	//
 }
 
+/**
+* Filter (Video Sync)
+*/
+
+struct mediasoup_sync_filter
+{
+	obs_source_t* source{ nullptr };
+	uint32_t width{ 0 };
+	uint32_t height{ 0 };
+	gs_texrender_t* texrender{ nullptr };
+	gs_stagesurf_t* stagesurface{ nullptr };
+};
+
+static void msoup_fsvideo_filter_offscreen_render(void* param, uint32_t cx, uint32_t cy);
+
+static const char* msoup_fsvideo_get_name(void* unused)
+{
+	UNUSED_PARAMETER(unused);
+	return obs_module_text("mediasoup-video-filter-s");
+}
+
+// Create
+static void* msoup_fsvideo_create(obs_data_t* settings, obs_source_t* source)
+{
+	mediasoup_sync_filter* vars = new mediasoup_sync_filter{};
+	vars->source = source;
+
+	obs_add_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
+	return vars;
+}
+
+// Destroy
+static void msoup_fsvideo_destroy(void* data)
+{
+	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(data);
+
+	gs_stagesurface_destroy(vars->stagesurface);
+	gs_texrender_destroy(vars->texrender);
+	obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
+
+	delete vars;
+}
+
+static obs_properties_t* msoup_fsvideo_properties(void* data)
+{
+	UNUSED_PARAMETER(data);
+	return obs_properties_create();
+}
+
+static void msoup_fsvideo_filter_offscreen_render(void* param, uint32_t cx, uint32_t cy)
+{
+	UNUSED_PARAMETER(cx);
+	UNUSED_PARAMETER(cy);
+
+	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(param);
+	obs_source_t* target = obs_filter_get_parent(vars->source);
+
+	if (target == nullptr)
+		return;
+
+	uint32_t width = obs_source_get_base_width(vars->source);
+	uint32_t height = obs_source_get_base_height(vars->source);
+
+	if (vars->width != width || vars->height != height)
+	{
+		// Destroy old
+		gs_stagesurface_destroy(vars->stagesurface);
+		gs_texrender_destroy(vars->texrender);
+
+		// Create new
+		vars->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
+		vars->stagesurface = gs_stagesurface_create(width, height, GS_BGRA);
+		vars->width = width;
+		vars->height = height;
+	}
+
+	gs_texrender_reset(vars->texrender);
+
+	// Draw the frame onto texrender
+	if (gs_texrender_begin(vars->texrender, width, height))
+	{
+		struct vec4 background;
+		vec4_zero(&background);
+
+		gs_clear(GS_CLEAR_COLOR, &background, 0.0f, 0);
+		gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f, 100.0f);
+
+		gs_blend_state_push();
+		gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
+
+		obs_source_video_render(target);
+
+		gs_blend_state_pop();
+		gs_texrender_end(vars->texrender);
+	}
+
+	obs_source_frame sframe{};
+	gs_stage_texture(vars->stagesurface, gs_texrender_get_texture(vars->texrender));
+	
+	// Get pointer to data from gs
+	if (gs_stagesurface_map(vars->stagesurface, &sframe.data[0], &sframe.linesize[0]))
+	{
+		// Use the data
+		sframe.width = vars->width;
+		sframe.height = vars->height;
+		sframe.flip = false;
+		sframe.format = VIDEO_FORMAT_BGRA;
+		msoup_fvideo_filter_video(obs_source_get_settings(vars->source), &sframe);
+
+		// Release pointer to data from gs
+		gs_stagesurface_unmap(vars->stagesurface);
+	}
+}
+
+static void msoup_fsvideo_video_render(void* data, gs_effect_t* effect)
+{
+	UNUSED_PARAMETER(effect);
+	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(data);
+	obs_source_skip_video_filter(vars->source);
+}
+
+static void msoup_fsvideo_video_tick(void* data, float seconds)
+{
+	UNUSED_PARAMETER(data);
+	UNUSED_PARAMETER(seconds);
+}
+
+static void msoup_fsvideo_update_settings(void* data, obs_data_t* settings)
+{
+	UNUSED_PARAMETER(data);
+	UNUSED_PARAMETER(settings);
+}
+
+static void msoup_fsvideo_defaults(obs_data_t* settings)
+{
+	UNUSED_PARAMETER(settings);
+}
+
 bool obs_module_load(void)
 {
 	struct obs_source_info mediasoup_connector	= {};
@@ -374,20 +536,36 @@ bool obs_module_load(void)
 	
 	obs_register_source(&mediasoup_filter_audio);
 	
-	// Filter (Video)
+	// Filter (Video Async)
 	struct obs_source_info mediasoup_filter_video	= {};
 	mediasoup_filter_video.id			= "mediasoupconnector_vfilter";
-	mediasoup_filter_video.type			= OBS_SOURCE_TYPE_FILTER,
-	mediasoup_filter_video.output_flags		= OBS_SOURCE_VIDEO | OBS_SOURCE_ASYNC,
-	mediasoup_filter_video.get_name			= msoup_fvideo_get_name,
-	mediasoup_filter_video.create			= msoup_fvideo_create,
-	mediasoup_filter_video.destroy			= msoup_fvideo_destroy,
-	mediasoup_filter_video.update			= msoup_fvideo_update,
-	mediasoup_filter_video.get_defaults		= msoup_fvideo_defaults,
-	mediasoup_filter_video.get_properties		= msoup_fvideo_properties,
-	mediasoup_filter_video.filter_video		= msoup_fvideo_filter_video,
-			
+	mediasoup_filter_video.type			= OBS_SOURCE_TYPE_FILTER;
+	mediasoup_filter_video.output_flags		= OBS_SOURCE_VIDEO | OBS_SOURCE_ASYNC;
+	mediasoup_filter_video.get_name			= msoup_fvideo_get_name;
+	mediasoup_filter_video.create			= msoup_fvideo_create;
+	mediasoup_filter_video.destroy			= msoup_fvideo_destroy;
+	mediasoup_filter_video.update			= msoup_fvideo_update;
+	mediasoup_filter_video.get_defaults		= msoup_fvideo_defaults;
+	mediasoup_filter_video.get_properties		= msoup_fvideo_properties;
+	mediasoup_filter_video.filter_video		= msoup_fvideo_filter_video;
+
 	obs_register_source(&mediasoup_filter_video);
+	
+	// Filter (Video Sync)
+	struct obs_source_info mediasoup_filter_video_s	= {};
+	mediasoup_filter_video_s.id			= "mediasoupconnector_vsfilter";
+	mediasoup_filter_video_s.type			= OBS_SOURCE_TYPE_FILTER;
+	mediasoup_filter_video_s.output_flags		= OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB;
+	mediasoup_filter_video_s.get_name		= msoup_fsvideo_get_name;
+	mediasoup_filter_video_s.create			= msoup_fsvideo_create;
+	mediasoup_filter_video_s.destroy		= msoup_fsvideo_destroy;
+	mediasoup_filter_video_s.update			= msoup_fsvideo_update_settings;
+	mediasoup_filter_video_s.get_defaults		= msoup_fsvideo_defaults;
+	mediasoup_filter_video_s.get_properties		= msoup_fsvideo_properties,
+	mediasoup_filter_video_s.video_tick		= msoup_fsvideo_video_tick;
+	mediasoup_filter_video_s.video_render		= msoup_fsvideo_video_render;
+
+	obs_register_source(&mediasoup_filter_video_s);
 	return true;
 }
 

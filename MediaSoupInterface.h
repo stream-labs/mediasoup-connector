@@ -53,9 +53,7 @@ public:
 
 	MediaSoupTransceiver* getTransceiver() { return m_transceiver.get(); }
 
-	rtc::scoped_refptr<webrtc::I420Buffer> getProducerFrameBuffer(const int width, const int height);
-
-	std::atomic<int> m_sourceCounter = 0;
+	std::atomic<int> m_sourceCounter;
 
 private:	
 	bool m_threadInProgress{ false };
@@ -71,8 +69,6 @@ private:
 
 	std::unique_ptr<MediaSoupTransceiver> m_transceiver;
 	std::unique_ptr<std::thread> m_connectionThread;
-	
-	rtc::scoped_refptr<webrtc::I420Buffer> m_producerFrameBuffer;
 
 public:
 	static MediaSoupInterface& instance()

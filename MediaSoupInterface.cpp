@@ -13,6 +13,7 @@
 
 MediaSoupInterface::MediaSoupInterface()
 {
+	m_sourceCounter = 0;
 	m_transceiver = std::make_unique<MediaSoupTransceiver>();
 }
 
@@ -60,8 +61,8 @@ void MediaSoupInterface::applyVideoFrameToObsTexture(webrtc::VideoFrame& frame, 
 	int height = int(float(i420buffer->height()) * scale);
 	i420buffer = rtc::scoped_refptr<webrtc::I420BufferInterface>(i420buffer->Scale(width, height)->ToI420());
 
-	DWORD biBitCount = 32;
-	DWORD biSizeImage = i420buffer->width() *  i420buffer->height() * (biBitCount >> 3);
+	int biBitCount = 32;
+	int biSizeImage = i420buffer->width() *  i420buffer->height() * (biBitCount >> 3);
 	
 	std::unique_ptr<uint8_t[]> abgrBuffer;
 	abgrBuffer.reset(new uint8_t[biSizeImage]); 
@@ -83,14 +84,6 @@ void MediaSoupInterface::ensureDrawTexture(const int w, const int h, MediaSoupIn
 		gs_texture_destroy(sourceInfo.m_obs_scene_texture);
 
 	sourceInfo.m_obs_scene_texture = gs_texture_create(w, h, GS_RGBA, 1, NULL, GS_DYNAMIC);
-}
-
-rtc::scoped_refptr<webrtc::I420Buffer> MediaSoupInterface::getProducerFrameBuffer(const int width, const int height)
-{
-	if (m_producerFrameBuffer == nullptr || m_producerFrameBuffer->width() != width || m_producerFrameBuffer->height() != height)
-		m_producerFrameBuffer = webrtc::I420Buffer::Create(width, height);
-
-	return m_producerFrameBuffer;
 }
 
 void MediaSoupInterface::joinWaitingThread()
