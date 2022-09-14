@@ -15,6 +15,9 @@ MediaSoupMailbox::~MediaSoupMailbox()
 
 	if (m_from_float_to_mediasoup_resampler != nullptr)
 		audio_resampler_destroy(m_from_float_to_mediasoup_resampler);
+
+	if (m_to_mediasoup_resampler != nullptr)
+		audio_resampler_destroy(m_to_mediasoup_resampler);
 }
 
 rtc::scoped_refptr<webrtc::I420Buffer> MediaSoupMailbox::getProducerFrameBuffer(const int width, const int height)
@@ -58,6 +61,9 @@ void MediaSoupMailbox::assignOutgoingAudioParams(const audio_format audioformat,
 	if (m_from_float_to_mediasoup_resampler != nullptr)
 		audio_resampler_destroy(m_from_float_to_mediasoup_resampler);
 
+	if (m_to_mediasoup_resampler != nullptr)
+		audio_resampler_destroy(m_to_mediasoup_resampler);
+
 	struct resample_info from;
 	struct resample_info to;
 
@@ -82,6 +88,17 @@ void MediaSoupMailbox::assignOutgoingAudioParams(const audio_format audioformat,
 	to.format = MediaSoupTransceiver::GetDefaultAudioFormat();
 
 	m_from_float_to_mediasoup_resampler = audio_resampler_create(&to, &from);
+
+	// Format -> GetDefaultAudioFormat
+	from.samples_per_sec = m_obs_samples_per_sec;
+	from.speakers = speakerLayout;
+	from.format = audioformat;
+
+	to.samples_per_sec = m_obs_samples_per_sec;
+	to.speakers = speakerLayout;
+	to.format = MediaSoupTransceiver::GetDefaultAudioFormat();
+
+	m_to_mediasoup_resampler = audio_resampler_create(&to, &from);
 }
 
 void MediaSoupMailbox::push_outgoing_audioFrame(const uint8_t** data, const int frames)
@@ -145,8 +162,19 @@ void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<Soup
 		uint32_t numFrames = 0;
 		uint64_t tOffset = 0;
 
+		// Avoid redundant work
+		if (m_volume == 1.f)
+		{
+			// Format -> Mediasoup
+			if (audio_resampler_resample(m_to_mediasoup_resampler, array2d_int16_raw, &numFrames, &tOffset, array2d_float_planar_raw, framesPer10ms))
+			{
+				ptr->audio_data.resize(framesPer10ms * m_obs_numChannels);
+				webrtc::Interleave((int16_t**)array2d_int16_raw, ptr->numFrames, ptr->numChannels, ptr->audio_data.data());
+			}
+		}
+
 		// Planar -> Float
-		if (audio_resampler_resample(m_to_float_resampler, array2d_float_raw, &numFrames, &tOffset, array2d_float_planar_raw, framesPer10ms))
+		else if (audio_resampler_resample(m_to_float_resampler, array2d_float_raw, &numFrames, &tOffset, array2d_float_planar_raw, framesPer10ms))
 		{
 			// Apply volume
 			float *cur = (float *)array2d_float_raw[0];

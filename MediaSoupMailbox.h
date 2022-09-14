@@ -64,6 +64,7 @@ private:
 
 	audio_resampler_t *m_to_float_resampler = nullptr;
 	audio_resampler_t *m_from_float_to_mediasoup_resampler = nullptr;
+	audio_resampler_t *m_to_mediasoup_resampler = nullptr;
 	
 	rtc::scoped_refptr<webrtc::I420Buffer> m_producerFrameBuffer;
 };
