@@ -212,7 +212,7 @@ static const char* msoup_faudio_name(void* unused)
 // Create
 static void* msoup_faudio_create(obs_data_t* settings, obs_source_t* source)
 {
-	return settings;
+	return source;
 }
 
 // Destroy
@@ -223,7 +223,14 @@ static void msoup_faudio_destroy(void* data)
 
 static struct obs_audio_data* msoup_faudio_filter_audio(void* data, struct obs_audio_data* audio)
 {
-	std::string producerId = obs_data_get_string(static_cast<obs_data_t*>(data), "producerId");
+	auto source = static_cast<obs_source_t*>(data);
+	auto parent = obs_filter_get_parent(source);
+	auto settings = obs_source_get_settings(source);
+	std::string producerId = obs_data_get_string(settings, "producerId");
+	obs_data_release(settings);
+
+	if (obs_source_muted(parent))
+		return audio;
 
 	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return audio;
@@ -232,6 +239,7 @@ static struct obs_audio_data* msoup_faudio_filter_audio(void* data, struct obs_a
 	{
 		const struct audio_output_info* aoi = audio_output_get_info(obs_get_audio());
 		mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
+		mailbox->assignOutgoingVolume(obs_source_get_volume(parent));
 		mailbox->push_outgoing_audioFrame((const uint8_t**)audio->data, audio->frames);
 	}
 

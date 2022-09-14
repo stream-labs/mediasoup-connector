@@ -37,6 +37,7 @@ public:
 	void pop_outgoing_audioFrames(std::vector<std::unique_ptr<SoupSendAudioFrame>>& output);
 
 	void assignOutgoingAudioParams(const audio_format audioformat, const speaker_layout speakerLayout, const int bytesPerSample, const int numChannels, const int samples_per_sec);
+	void assignOutgoingVolume(const float vol) { m_volume = vol; }
 
 private:
 	// Receive
@@ -55,9 +56,15 @@ private:
 	int m_obs_numChannels = 0;
 	int m_obs_samples_per_sec = 0;
 	int m_obs_numFrames = 0;
+
+	float m_volume = 0;
+
 	audio_format m_obs_audioformat = AUDIO_FORMAT_UNKNOWN;
 	speaker_layout m_obs_speakerLayout = SPEAKERS_UNKNOWN;
-	audio_resampler_t* m_obs_resampler = nullptr;
+
+	audio_resampler_t *m_to_float_resampler = nullptr;
+	audio_resampler_t *m_from_float_to_mediasoup_resampler = nullptr;
+	audio_resampler_t *m_to_mediasoup_resampler = nullptr;
 	
 	rtc::scoped_refptr<webrtc::I420Buffer> m_producerFrameBuffer;
 };
