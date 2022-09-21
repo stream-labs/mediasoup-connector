@@ -37,5 +37,5 @@ struct ConnectorFrontApiHelper
 	static bool onProduce(const std::string& clientId, const std::string& transportId, const std::string& kind, const json& rtpParameters, std::string& output_value);
 
 private:
-	static clock_t getWaitTimeoutDuration() { return clock_t(30000); }
+	static int64_t getWaitTimeoutDurationSeconds() { return int64_t(30); }
 };
