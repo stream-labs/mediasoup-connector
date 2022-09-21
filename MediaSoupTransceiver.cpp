@@ -46,7 +46,7 @@ bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_
 
 	if (m_device != nullptr)
 	{
-		m_lastErorMsg = "Reciver transport already exists";
+		m_lastErorMsg = "Device already exists";
 		return false;
 	}
 
