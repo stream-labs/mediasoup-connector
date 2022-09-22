@@ -199,4 +199,4 @@ endif()
 #set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 #set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 
-install_obs_plugin(mediasoup-connector)
+setup_plugin_target(mediasoup-connector)
