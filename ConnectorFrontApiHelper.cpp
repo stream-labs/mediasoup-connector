@@ -152,17 +152,18 @@ bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo& 
 
 		MediaSoupInterface::instance().setThreadIsProgress(true);
 		std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, params_parsed, kind, obsSourceInfo.m_obs_source);
-		auto timeStart = std::clock();
+
+		int64_t timeExpire = getWaitTimeoutDurationSeconds() + std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 		while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting())
 		{
 			// Timeout
-			if (std::clock() - getWaitTimeoutDuration() > timeStart)
+			if (timeExpire <= std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 			{
 				MediaSoupInterface::instance().setThreadIsProgress(false);
 				MediaSoupInterface::instance().resetThreadCache();
 				thr->join();
-				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %dms", obs_module_description(), getWaitTimeoutDuration());
+				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %d seconds", obs_module_description(), getWaitTimeoutDurationSeconds());
 				return false;
 			}
 
@@ -265,17 +266,18 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string& kind, calld
 	MediaSoupInterface::instance().setThreadIsProgress(true);
 	MediaSoupInterface::instance().setExpectingProduceFollowup(true);
 	std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, kind, producerId, jsonInput);
-	auto timeStart = std::clock();
+	
+	int64_t timeExpire = getWaitTimeoutDurationSeconds() + std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 	while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting() && !MediaSoupInterface::instance().isProduceWaiting())
 	{
 		// Timeout
-		if (std::clock() - getWaitTimeoutDuration() > timeStart)
+		if (timeExpire <= std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 		{
 			MediaSoupInterface::instance().setThreadIsProgress(false);
 			MediaSoupInterface::instance().joinWaitingThread();
 			thr->join();
-			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %dms", obs_module_description(), getWaitTimeoutDuration());
+			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %d seconds", obs_module_description(), getWaitTimeoutDurationSeconds());
 			return false;
 		}
 

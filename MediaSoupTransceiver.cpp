@@ -46,7 +46,7 @@ bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_
 
 	if (m_device != nullptr)
 	{
-		m_lastErorMsg = "Reciver transport already exists";
+		m_lastErorMsg = "Device already exists";
 		return false;
 	}
 
@@ -1021,6 +1021,8 @@ void MediaSoupTransceiver::MyAudioSink::OnData(const void* audio_data, int bits_
 	
 	if (absolute_capture_timestamp_ms.has_value())
 		sdata.timestamp = absolute_capture_timestamp_ms.value();
+	else
+		sdata.timestamp = os_gettime_ns();
 
 	obs_source_output_audio(m_obs_source, &sdata);
 
