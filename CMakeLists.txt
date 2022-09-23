@@ -76,7 +76,7 @@ add_library(webrtc-testlibs STATIC
 if(MSVC)
 	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
 else()
-	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
+	# target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
 endif()
 
 target_link_libraries(webrtc-testlibs
@@ -130,7 +130,7 @@ add_library(mediasoup-connector MODULE
 if(MSVC)
 	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
 else()
-	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
+	# target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
 endif()
 
 target_link_libraries(mediasoup-connector
