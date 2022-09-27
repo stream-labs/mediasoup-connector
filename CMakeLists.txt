@@ -37,6 +37,15 @@ if(NOT OPENSSL_FOUND)
 	message(FATAL_ERROR "mediasoup-connector: OPENSSL_FOUND failed")
 endif()
 
+if (APPLE)
+	foreach(var CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+		CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
+		if(${var} MATCHES "/MD")
+			string(REGEX REPLACE "/MD" "/MT" ${var} "${${var}}")
+		endif()
+	endforeach()
+endif()
+
 set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)	
 		
 if(MSVC)
@@ -75,8 +84,6 @@ add_library(webrtc-testlibs STATIC
 # webrtc's warnings, we don't need to see them)
 if(MSVC)
 	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
-elseif(APPLE)
-	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
 endif()
 
 target_link_libraries(webrtc-testlibs
@@ -129,8 +136,6 @@ add_library(mediasoup-connector MODULE
 	
 if(MSVC)
 	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
-elseif(APPLE)
-	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>")
 endif()
 
 target_link_libraries(mediasoup-connector
