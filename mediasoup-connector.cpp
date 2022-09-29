@@ -394,9 +394,16 @@ static void msoup_fsvideo_destroy(void* data)
 
 	gs_stagesurface_destroy(vars->stagesurface);
 	gs_texrender_destroy(vars->texrender);
-	obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 
 	delete vars;
+}
+
+// Remove filter
+static void msoup_fsvideo_filter_remove(void *data, obs_source_t *source)
+{
+	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(data);
+
+	obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 }
 
 static obs_properties_t* msoup_fsvideo_properties(void* data)
@@ -564,6 +571,7 @@ bool obs_module_load(void)
 	mediasoup_filter_video_s.get_properties		= msoup_fsvideo_properties,
 	mediasoup_filter_video_s.video_tick		= msoup_fsvideo_video_tick;
 	mediasoup_filter_video_s.video_render		= msoup_fsvideo_video_render;
+	mediasoup_filter_video_s.filter_remove = msoup_fsvideo_filter_remove;
 
 	obs_register_source(&mediasoup_filter_video_s);
 	return true;
