@@ -383,7 +383,6 @@ static void* msoup_fsvideo_create(obs_data_t* settings, obs_source_t* source)
 	mediasoup_sync_filter* vars = new mediasoup_sync_filter{};
 	vars->source = source;
 
-	obs_add_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 	return vars;
 }
 
@@ -398,12 +397,22 @@ static void msoup_fsvideo_destroy(void* data)
 	delete vars;
 }
 
+// Add filter
+static void msoup_fsvideo_filter_add(void *data, obs_source_t *source)
+{
+	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(data);
+
+	if (vars)
+		obs_add_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
+}
+
 // Remove filter
 static void msoup_fsvideo_filter_remove(void *data, obs_source_t *source)
 {
 	mediasoup_sync_filter* vars = static_cast<mediasoup_sync_filter*>(data);
 
-	obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
+	if (vars)
+		obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 }
 
 static obs_properties_t* msoup_fsvideo_properties(void* data)
@@ -572,6 +581,7 @@ bool obs_module_load(void)
 	mediasoup_filter_video_s.video_tick		= msoup_fsvideo_video_tick;
 	mediasoup_filter_video_s.video_render		= msoup_fsvideo_video_render;
 	mediasoup_filter_video_s.filter_remove = msoup_fsvideo_filter_remove;
+	mediasoup_filter_video_s.filter_add = msoup_fsvideo_filter_add;
 
 	obs_register_source(&mediasoup_filter_video_s);
 	return true;
