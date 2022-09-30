@@ -580,8 +580,8 @@ bool obs_module_load(void)
 	mediasoup_filter_video_s.get_properties		= msoup_fsvideo_properties,
 	mediasoup_filter_video_s.video_tick		= msoup_fsvideo_video_tick;
 	mediasoup_filter_video_s.video_render		= msoup_fsvideo_video_render;
-	mediasoup_filter_video_s.filter_remove = msoup_fsvideo_filter_remove;
-	mediasoup_filter_video_s.filter_add = msoup_fsvideo_filter_add;
+	mediasoup_filter_video_s.filter_add		= msoup_fsvideo_filter_add;
+	mediasoup_filter_video_s.filter_remove		= msoup_fsvideo_filter_remove;
 
 	obs_register_source(&mediasoup_filter_video_s);
 	return true;
