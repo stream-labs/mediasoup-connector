@@ -335,6 +335,9 @@ static struct obs_source_frame* msoup_fvideo_filter_video(void* data, struct obs
 	case VIDEO_FORMAT_NV12:
 		libyuv::NV12ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1],  static_cast<int>(frame->linesize[1]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
+	case VIDEO_FORMAT_BGRX:
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		break;
 	default:
 		return frame;
 	}
