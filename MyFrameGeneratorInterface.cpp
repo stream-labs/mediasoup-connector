@@ -4,21 +4,19 @@
 #include "MediaSoupTransceiver.h"
 #include "MediaSoupMailbox.h"
 
-MyFrameGeneratorInterface::MyFrameGeneratorInterface(int width, int height, OutputType type, std::shared_ptr<MediaSoupMailbox> mailbox) :
-	m_mailbox(mailbox),
-	m_width(width),
-	m_height(height)
+MyFrameGeneratorInterface::MyFrameGeneratorInterface(
+	int width, int height, OutputType type,
+	std::shared_ptr<MediaSoupMailbox> mailbox)
+	: m_mailbox(mailbox), m_width(width), m_height(height)
 {
 	m_lastFrame = webrtc::I420Buffer::Create(width, height);
 	webrtc::I420Buffer::SetBlack(m_lastFrame);
 }
 
-void MyFrameGeneratorInterface::ChangeResolution(size_t width, size_t height)
-{
+void MyFrameGeneratorInterface::ChangeResolution(size_t width, size_t height) {}
 
-}
-	
-webrtc::test::FrameGeneratorInterface::VideoFrameData MyFrameGeneratorInterface::NextFrame() 
+webrtc::test::FrameGeneratorInterface::VideoFrameData
+MyFrameGeneratorInterface::NextFrame()
 {
 	std::vector<rtc::scoped_refptr<webrtc::I420Buffer>> frames;
 	m_mailbox->pop_outgoing_videoFrames(frames);
@@ -29,18 +27,25 @@ webrtc::test::FrameGeneratorInterface::VideoFrameData MyFrameGeneratorInterface:
 	return VideoFrameData(m_lastFrame, absl::nullopt);
 }
 
-FrameGeneratorCapturerVideoTrackSource::FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, std::shared_ptr<MediaSoupMailbox> mailbox) :
-	VideoTrackSource(false),
-	task_queue_factory_(webrtc::CreateDefaultTaskQueueFactory()),
-	is_screencast_(is_screencast) 
+FrameGeneratorCapturerVideoTrackSource::FrameGeneratorCapturerVideoTrackSource(
+	Config config, webrtc::Clock *clock, bool is_screencast,
+	std::shared_ptr<MediaSoupMailbox> mailbox)
+	: VideoTrackSource(false),
+	  task_queue_factory_(webrtc::CreateDefaultTaskQueueFactory()),
+	  is_screencast_(is_screencast)
 {
-	video_capturer_ = std::make_unique<webrtc::test::FrameGeneratorCapturer>(clock, std::make_unique<MyFrameGeneratorInterface>(config.width, config.height, webrtc::test::FrameGeneratorInterface::OutputType::kI420, mailbox), config.frames_per_second, *task_queue_factory_);
+	video_capturer_ = std::make_unique<webrtc::test::FrameGeneratorCapturer>(
+		clock,
+		std::make_unique<MyFrameGeneratorInterface>(
+			config.width, config.height,
+			webrtc::test::FrameGeneratorInterface::OutputType::kI420,
+			mailbox),
+		config.frames_per_second, *task_queue_factory_);
 	video_capturer_->Init();
 }
 
 FrameGeneratorCapturerVideoTrackSource::~FrameGeneratorCapturerVideoTrackSource()
 {
-	
 }
 
 void FrameGeneratorCapturerVideoTrackSource::Start()
@@ -59,7 +64,8 @@ bool FrameGeneratorCapturerVideoTrackSource::is_screencast() const
 	return is_screencast_;
 }
 
-rtc::VideoSourceInterface<webrtc::VideoFrame>* FrameGeneratorCapturerVideoTrackSource::source()
+rtc::VideoSourceInterface<webrtc::VideoFrame> *
+FrameGeneratorCapturerVideoTrackSource::source()
 {
 	return video_capturer_.get();
 }

@@ -7,13 +7,13 @@
 
 class MediaSoupMailbox;
 
-class MyFrameGeneratorInterface : public webrtc::test::FrameGeneratorInterface
-{
+class MyFrameGeneratorInterface : public webrtc::test::FrameGeneratorInterface {
 public:
-	MyFrameGeneratorInterface(int width, int height, OutputType type, std::shared_ptr<MediaSoupMailbox> mailbox);
+	MyFrameGeneratorInterface(int width, int height, OutputType type,
+				  std::shared_ptr<MediaSoupMailbox> mailbox);
 
 	void ChangeResolution(size_t width, size_t height) override;
-	
+
 	VideoFrameData NextFrame() override;
 
 private:
@@ -24,22 +24,22 @@ private:
 	rtc::scoped_refptr<webrtc::I420Buffer> m_lastFrame;
 };
 
-class FrameGeneratorCapturerVideoTrackSource : public webrtc::VideoTrackSource
-{
+class FrameGeneratorCapturerVideoTrackSource : public webrtc::VideoTrackSource {
 public:
 	static const int kDefaultFramesPerSecond = 30;
 	static const int kDefaultWidth = 640;
 	static const int kDefaultHeight = 480;
 	static const int kNumSquaresGenerated = 50;
 
-	struct Config
-	{
+	struct Config {
 		int frames_per_second = kDefaultFramesPerSecond;
 		int width = kDefaultWidth;
 		int height = kDefaultHeight;
 	};
 
-	FrameGeneratorCapturerVideoTrackSource(Config config, webrtc::Clock* clock, bool is_screencast, std::shared_ptr<MediaSoupMailbox> mailbox);
+	FrameGeneratorCapturerVideoTrackSource(
+		Config config, webrtc::Clock *clock, bool is_screencast,
+		std::shared_ptr<MediaSoupMailbox> mailbox);
 	~FrameGeneratorCapturerVideoTrackSource();
 
 	void Start();
@@ -48,7 +48,7 @@ public:
 	bool is_screencast() const override;
 
 protected:
-	rtc::VideoSourceInterface<webrtc::VideoFrame>* source() override;
+	rtc::VideoSourceInterface<webrtc::VideoFrame> *source() override;
 
 private:
 	const std::unique_ptr<webrtc::TaskQueueFactory> task_queue_factory_;
