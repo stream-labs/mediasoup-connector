@@ -4,14 +4,9 @@
 #include "modules/audio_device/include/audio_device_default.h"
 #include "rtc_base/event.h"
 
-class MyProducerAudioDeviceModule
-	: public webrtc::webrtc_impl::AudioDeviceModuleDefault<
-		  webrtc::AudioDeviceModule> {
+class MyProducerAudioDeviceModule : public webrtc::webrtc_impl::AudioDeviceModuleDefault<webrtc::AudioDeviceModule> {
 public:
-	MyProducerAudioDeviceModule()
-		: audio_callback_(nullptr), rendering_(false), capturing_(false)
-	{
-	}
+	MyProducerAudioDeviceModule() : audio_callback_(nullptr), rendering_(false), capturing_(false) {}
 
 	~MyProducerAudioDeviceModule() override
 	{
@@ -70,20 +65,12 @@ public:
 	}
 
 public:
-	void PlayData(const void *audioSamples, const size_t nSamples,
-		      const size_t nBytesPerSample, const size_t nChannels,
-		      const uint32_t samples_per_sec,
-		      const uint32_t total_delay_ms, const int32_t clockDrift,
-		      const uint32_t currentMicLevel, const bool keyPressed,
-		      uint32_t &newMicLevel)
+	void PlayData(const void *audioSamples, const size_t nSamples, const size_t nBytesPerSample, const size_t nChannels, const uint32_t samples_per_sec, const uint32_t total_delay_ms, const int32_t clockDrift, const uint32_t currentMicLevel, const bool keyPressed, uint32_t &newMicLevel)
 	{
 		if (audio_callback_ == nullptr)
 			return;
 
-		audio_callback_->RecordedDataIsAvailable(
-			audioSamples, nSamples, nBytesPerSample, nChannels,
-			samples_per_sec, total_delay_ms, clockDrift,
-			currentMicLevel, keyPressed, newMicLevel);
+		audio_callback_->RecordedDataIsAvailable(audioSamples, nSamples, nBytesPerSample, nChannels, samples_per_sec, total_delay_ms, clockDrift, currentMicLevel, keyPressed, newMicLevel);
 	}
 
 private:

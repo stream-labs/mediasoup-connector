@@ -31,10 +31,7 @@ class FrameGeneratorCapturerVideoTrackSource;
 * MediaSoupTransceiver
 */
 
-class MediaSoupTransceiver : public mediasoupclient::RecvTransport::Listener,
-			     mediasoupclient::SendTransport::Listener,
-			     mediasoupclient::Consumer::Listener,
-			     mediasoupclient::Producer::Listener {
+class MediaSoupTransceiver : public mediasoupclient::RecvTransport::Listener, mediasoupclient::SendTransport::Listener, mediasoupclient::Consumer::Listener, mediasoupclient::Producer::Listener {
 public:
 	enum ConsumerType {
 		ConsumerError,
@@ -46,28 +43,12 @@ public:
 	MediaSoupTransceiver();
 	~MediaSoupTransceiver();
 
-	bool LoadDevice(json &routerRtpCapabilities,
-			json &output_deviceRtpCapabilities,
-			json &outpudet_viceSctpCapabilities);
-	bool CreateReceiver(const std::string &id, const json &iceParameters,
-			    const json &iceCandidates,
-			    const json &dtlsParameters,
-			    nlohmann::json *sctpParameters = nullptr,
-			    nlohmann::json *iceServers = nullptr);
-	bool CreateSender(const std::string &id, const json &iceParameters,
-			  const json &iceCandidates, const json &dtlsParameters,
-			  nlohmann::json *iceServers = nullptr);
-	bool CreateAudioConsumer(const std::string &id,
-				 const std::string &producerId,
-				 json *rtpParameters, obs_source_t *source);
-	bool CreateVideoConsumer(const std::string &id,
-				 const std::string &producerId,
-				 json *rtpParameters);
-	bool
-	CreateVideoProducerTrack(const std::string &id,
-				 const nlohmann::json *ebcodings = nullptr,
-				 const nlohmann::json *codecOptions = nullptr,
-				 const nlohmann::json *codec = nullptr);
+	bool LoadDevice(json &routerRtpCapabilities, json &output_deviceRtpCapabilities, json &outpudet_viceSctpCapabilities);
+	bool CreateReceiver(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters, nlohmann::json *sctpParameters = nullptr, nlohmann::json *iceServers = nullptr);
+	bool CreateSender(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters, nlohmann::json *iceServers = nullptr);
+	bool CreateAudioConsumer(const std::string &id, const std::string &producerId, json *rtpParameters, obs_source_t *source);
+	bool CreateVideoConsumer(const std::string &id, const std::string &producerId, json *rtpParameters);
+	bool CreateVideoProducerTrack(const std::string &id, const nlohmann::json *ebcodings = nullptr, const nlohmann::json *codecOptions = nullptr, const nlohmann::json *codec = nullptr);
 	bool CreateAudioProducerTrack(const std::string &id);
 
 	bool ProducerReady(const std::string &id);
@@ -87,10 +68,8 @@ public:
 	// Returns the ID of the consumer that was stopped
 	std::string StopConsumerByProducerId(const std::string &id);
 
-	std::shared_ptr<MediaSoupMailbox>
-	GetConsumerMailbox(const std::string &id);
-	std::shared_ptr<MediaSoupMailbox>
-	GetProducerMailbox(const std::string &id);
+	std::shared_ptr<MediaSoupMailbox> GetConsumerMailbox(const std::string &id);
+	std::shared_ptr<MediaSoupMailbox> GetProducerMailbox(const std::string &id);
 
 	mediasoupclient::Device *GetDevice() const { return m_device.get(); }
 
@@ -99,31 +78,18 @@ public:
 	const std::string PopLastError();
 	const std::string &GetId() const { return m_id; }
 
-	static audio_format GetDefaultAudioFormat()
-	{
-		return AUDIO_FORMAT_16BIT_PLANAR;
-	}
+	static audio_format GetDefaultAudioFormat() { return AUDIO_FORMAT_16BIT_PLANAR; }
 
 public:
 	// SendTransport
 	// RecvTransport
-	std::future<void> OnConnect(mediasoupclient::Transport *transport,
-				    const json &dtlsParameters) override;
-	void
-	OnConnectionStateChange(mediasoupclient::Transport *transport,
-				const std::string &connectionState) override;
+	std::future<void> OnConnect(mediasoupclient::Transport *transport, const json &dtlsParameters) override;
+	void OnConnectionStateChange(mediasoupclient::Transport *transport, const std::string &connectionState) override;
 
 public:
 	// SendTransport
-	std::future<std::string>
-	OnProduceData(mediasoupclient::SendTransport *sendTransport,
-		      const nlohmann::json &sctpStreamParameters,
-		      const std::string &label, const std::string &protocol,
-		      const nlohmann::json &appData) override;
-	std::future<std::string>
-	OnProduce(mediasoupclient::SendTransport * /*transport*/,
-		  const std::string &kind, nlohmann::json rtpParameters,
-		  const nlohmann::json &appData) override;
+	std::future<std::string> OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters, const std::string &label, const std::string &protocol, const nlohmann::json &appData) override;
+	std::future<std::string> OnProduce(mediasoupclient::SendTransport * /*transport*/, const std::string &kind, nlohmann::json rtpParameters, const nlohmann::json &appData) override;
 
 public:
 	// Producer
@@ -139,22 +105,11 @@ private:
 
 	std::string GetConnectionState(mediasoupclient::Transport *transport);
 
-	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-	CreateProducerFactory();
-	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-	CreateConsumerFactory();
+	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateProducerFactory();
+	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateConsumerFactory();
 
-	rtc::scoped_refptr<webrtc::AudioTrackInterface>
-	CreateProducerAudioTrack(
-		rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-			factory,
-		const std::string &label);
-	rtc::scoped_refptr<webrtc::VideoTrackInterface>
-	CreateProducerVideoTrack(
-		rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-			factory,
-		const std::string &label,
-		std::shared_ptr<MediaSoupMailbox> ptr);
+	rtc::scoped_refptr<webrtc::AudioTrackInterface> CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label);
+	rtc::scoped_refptr<webrtc::VideoTrackInterface> CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label, std::shared_ptr<MediaSoupMailbox> ptr);
 
 	json m_dtlsParameters_local;
 
@@ -186,24 +141,17 @@ private:
 		obs_source_t *m_obs_source{nullptr};
 	};
 
-	class MyAudioSink : public webrtc::AudioTrackSinkInterface,
-			    public GenericSink {
+	class MyAudioSink : public webrtc::AudioTrackSinkInterface, public GenericSink {
 	public:
-		void OnData(const void *audio_data, int bits_per_sample,
-			    int sample_rate, size_t number_of_channels,
-			    size_t number_of_frames,
-			    absl::optional<int64_t>
-				    absolute_capture_timestamp_ms) override;
+		void OnData(const void *audio_data, int bits_per_sample, int sample_rate, size_t number_of_channels, size_t number_of_frames, absl::optional<int64_t> absolute_capture_timestamp_ms) override;
 	};
 
-	class MyVideoSink : public rtc::VideoSinkInterface<webrtc::VideoFrame>,
-			    public GenericSink {
+	class MyVideoSink : public rtc::VideoSinkInterface<webrtc::VideoFrame>, public GenericSink {
 	public:
 		void OnFrame(const webrtc::VideoFrame &video_frame) override;
 	};
 
-	rtc::scoped_refptr<MyProducerAudioDeviceModule>
-		m_MyProducerAudioDeviceModule;
+	rtc::scoped_refptr<MyProducerAudioDeviceModule> m_MyProducerAudioDeviceModule;
 	rtc::scoped_refptr<webrtc::AudioDeviceModule> m_DefaultDeviceCore;
 	std::unique_ptr<webrtc::TaskQueueFactory> m_DefaultDeviceCore_TaskQueue;
 
@@ -216,13 +164,10 @@ private:
 	std::unique_ptr<rtc::Thread> m_workerThread_Producer{nullptr};
 
 	mediasoupclient::PeerConnection::Options m_producerOptions;
-	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-		m_factory_Producer;
+	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory_Producer;
 
 	// id, Producers
-	std::map<std::string, std::pair<mediasoupclient::Producer *,
-					std::shared_ptr<MediaSoupMailbox>>>
-		m_dataProducers;
+	std::map<std::string, std::pair<mediasoupclient::Producer *, std::shared_ptr<MediaSoupMailbox>>> m_dataProducers;
 
 	// Consumer
 private:
@@ -231,22 +176,15 @@ private:
 	std::unique_ptr<rtc::Thread> m_workerThread_Consumer{nullptr};
 
 	mediasoupclient::PeerConnection::Options m_consumerOptions;
-	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-		m_factory_Consumer;
+	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> m_factory_Consumer;
 
 	// id, Consumers
-	std::map<std::string, std::pair<mediasoupclient::Consumer *,
-					std::unique_ptr<GenericSink>>>
-		m_dataConsumers;
+	std::map<std::string, std::pair<mediasoupclient::Consumer *, std::unique_ptr<GenericSink>>> m_dataConsumers;
 
 	// Thread safe assignment
 private:
-	void AssignProducer(const std::string &id,
-			    mediasoupclient::Producer *value,
-			    std::shared_ptr<MediaSoupMailbox> mailbox);
-	void AssignConsumer(const std::string &id,
-			    mediasoupclient::Consumer *value,
-			    std::unique_ptr<GenericSink> sink);
+	void AssignProducer(const std::string &id, mediasoupclient::Producer *value, std::shared_ptr<MediaSoupMailbox> mailbox);
+	void AssignConsumer(const std::string &id, mediasoupclient::Consumer *value, std::unique_ptr<GenericSink> sink);
 
 	std::recursive_mutex m_consumerMutex;
 	std::recursive_mutex m_producerMutex;

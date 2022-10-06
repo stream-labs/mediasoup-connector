@@ -31,19 +31,11 @@ public:
 	void setConnectIsWaiting(const bool v) { m_connectWaiting = v; }
 	void setProduceIsWaiting(const bool v) { m_produceWaiting = v; }
 	void setThreadIsProgress(const bool v) { m_threadInProgress = v; }
-	void setExpectingProduceFollowup(const bool v)
-	{
-		m_expectingProduceFollowup = v;
-	}
-	void setConnectionThread(std::unique_ptr<std::thread> thr)
-	{
-		m_connectionThread = std::move(thr);
-	}
+	void setExpectingProduceFollowup(const bool v) { m_expectingProduceFollowup = v; }
+	void setConnectionThread(std::unique_ptr<std::thread> thr) { m_connectionThread = std::move(thr); }
 
-	static void applyVideoFrameToObsTexture(webrtc::VideoFrame &frame,
-						ObsSourceInfo &sourceInfo);
-	static void ensureDrawTexture(const int width, const int height,
-				      ObsSourceInfo &sourceInfo);
+	static void applyVideoFrameToObsTexture(webrtc::VideoFrame &frame, ObsSourceInfo &sourceInfo);
+	static void ensureDrawTexture(const int width, const int height, ObsSourceInfo &sourceInfo);
 
 	bool popDataReadyForConnect(std::string &output);
 	bool popDataReadyForProduce(std::string &output);

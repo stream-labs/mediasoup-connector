@@ -44,54 +44,37 @@ void MediaSoupInterface::reset()
 	m_transceiver = std::make_unique<MediaSoupTransceiver>();
 }
 
-void MediaSoupInterface::applyVideoFrameToObsTexture(
-	webrtc::VideoFrame &frame,
-	MediaSoupInterface::ObsSourceInfo &sourceInfo)
+void MediaSoupInterface::applyVideoFrameToObsTexture(webrtc::VideoFrame &frame, MediaSoupInterface::ObsSourceInfo &sourceInfo)
 {
 	// The webrtc image buffer should be in I420 format already, so this is just grabbing a ref ptr to it
-	rtc::scoped_refptr<webrtc::I420BufferInterface> i420buffer(
-		frame.video_frame_buffer()->ToI420());
+	rtc::scoped_refptr<webrtc::I420BufferInterface> i420buffer(frame.video_frame_buffer()->ToI420());
 
 	if (frame.rotation() != webrtc::kVideoRotation_0)
-		i420buffer = webrtc::I420Buffer::Rotate(*i420buffer,
-							frame.rotation());
+		i420buffer = webrtc::I420Buffer::Rotate(*i420buffer, frame.rotation());
 
-	float extraWidth =
-		float(getHardObsTextureWidth()) / float(i420buffer->width());
-	float extraHeight =
-		float(getHardObsTextureHeight()) / float(i420buffer->height());
+	float extraWidth = float(getHardObsTextureWidth()) / float(i420buffer->width());
+	float extraHeight = float(getHardObsTextureHeight()) / float(i420buffer->height());
 	float scale = std::min(extraWidth, extraHeight);
 
 	// Scale
 	int width = int(float(i420buffer->width()) * scale);
 	int height = int(float(i420buffer->height()) * scale);
-	i420buffer = rtc::scoped_refptr<webrtc::I420BufferInterface>(
-		i420buffer->Scale(width, height)->ToI420());
+	i420buffer = rtc::scoped_refptr<webrtc::I420BufferInterface>(i420buffer->Scale(width, height)->ToI420());
 
 	int biBitCount = 32;
-	int biSizeImage =
-		i420buffer->width() * i420buffer->height() * (biBitCount >> 3);
+	int biSizeImage = i420buffer->width() * i420buffer->height() * (biBitCount >> 3);
 
 	std::unique_ptr<uint8_t[]> abgrBuffer;
 	abgrBuffer.reset(new uint8_t[biSizeImage]);
-	libyuv::I420ToABGR(i420buffer->DataY(), i420buffer->StrideY(),
-			   i420buffer->DataU(), i420buffer->StrideU(),
-			   i420buffer->DataV(), i420buffer->StrideV(),
-			   abgrBuffer.get(),
-			   i420buffer->width() * biBitCount / 8,
-			   i420buffer->width(), i420buffer->height());
+	libyuv::I420ToABGR(i420buffer->DataY(), i420buffer->StrideY(), i420buffer->DataU(), i420buffer->StrideU(), i420buffer->DataV(), i420buffer->StrideV(), abgrBuffer.get(), i420buffer->width() * biBitCount / 8, i420buffer->width(), i420buffer->height());
 
-	ensureDrawTexture(i420buffer->width(), i420buffer->height(),
-			  sourceInfo);
-	gs_texture_set_image(sourceInfo.m_obs_scene_texture, abgrBuffer.get(),
-			     i420buffer->width() * 4, false);
+	ensureDrawTexture(i420buffer->width(), i420buffer->height(), sourceInfo);
+	gs_texture_set_image(sourceInfo.m_obs_scene_texture, abgrBuffer.get(), i420buffer->width() * 4, false);
 }
 
-void MediaSoupInterface::ensureDrawTexture(
-	const int w, const int h, MediaSoupInterface::ObsSourceInfo &sourceInfo)
+void MediaSoupInterface::ensureDrawTexture(const int w, const int h, MediaSoupInterface::ObsSourceInfo &sourceInfo)
 {
-	if (sourceInfo.m_textureWidth == w && sourceInfo.m_textureHeight == h &&
-	    sourceInfo.m_obs_scene_texture != nullptr)
+	if (sourceInfo.m_textureWidth == w && sourceInfo.m_textureHeight == h && sourceInfo.m_obs_scene_texture != nullptr)
 		return;
 
 	sourceInfo.m_textureWidth = w;
@@ -100,8 +83,7 @@ void MediaSoupInterface::ensureDrawTexture(
 	if (sourceInfo.m_obs_scene_texture != nullptr)
 		gs_texture_destroy(sourceInfo.m_obs_scene_texture);
 
-	sourceInfo.m_obs_scene_texture =
-		gs_texture_create(w, h, GS_RGBA, 1, NULL, GS_DYNAMIC);
+	sourceInfo.m_obs_scene_texture = gs_texture_create(w, h, GS_RGBA, 1, NULL, GS_DYNAMIC);
 }
 
 void MediaSoupInterface::joinWaitingThread()

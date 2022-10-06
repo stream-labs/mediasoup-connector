@@ -16,8 +16,7 @@ public:
 
 protected:
 	void OnLogMessage(const std::string &message) final;
-	void OnLogMessage(const std::string &message,
-			  rtc::LoggingSeverity severity) final;
+	void OnLogMessage(const std::string &message, rtc::LoggingSeverity severity) final;
 
 private:
 	MyLogSink();

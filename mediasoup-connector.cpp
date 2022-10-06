@@ -36,61 +36,23 @@ static const char *msoup_getname(void *unused)
 // Create
 static void *msoup_create(obs_data_t *settings, obs_source_t *source)
 {
-	MediaSoupInterface::ObsSourceInfo *data =
-		new MediaSoupInterface::ObsSourceInfo{};
+	MediaSoupInterface::ObsSourceInfo *data = new MediaSoupInterface::ObsSourceInfo{};
 	data->m_obs_source = source;
 
 	proc_handler_t *ph = obs_source_get_proc_handler(source);
-	proc_handler_add(
-		ph, "void func_load_device(in string input, out string output)",
-		ConnectorFrontApi::func_load_device, data);
-	proc_handler_add(
-		ph,
-		"void func_create_send_transport(in string input, out string output)",
-		ConnectorFrontApi::func_create_send_transport, data);
-	proc_handler_add(
-		ph,
-		"void func_create_receive_transport(in string input, out string output)",
-		ConnectorFrontApi::func_create_receive_transport, data);
-	proc_handler_add(
-		ph,
-		"void func_video_consumer_response(in string input, out string output)",
-		ConnectorFrontApi::func_video_consumer_response, data);
-	proc_handler_add(
-		ph,
-		"void func_audio_consumer_response(in string input, out string output)",
-		ConnectorFrontApi::func_audio_consumer_response, data);
-	proc_handler_add(
-		ph,
-		"void func_create_audio_producer(in string input, out string output)",
-		ConnectorFrontApi::func_create_audio_producer, data);
-	proc_handler_add(
-		ph,
-		"void func_create_video_producer(in string input, out string output)",
-		ConnectorFrontApi::func_create_video_producer, data);
-	proc_handler_add(
-		ph,
-		"void func_produce_result(in string input, out string output)",
-		ConnectorFrontApi::func_produce_result, data);
-	proc_handler_add(
-		ph,
-		"void func_connect_result(in string input, out string output)",
-		ConnectorFrontApi::func_connect_result, data);
-	proc_handler_add(
-		ph,
-		"void func_stop_receiver(in string input, out string output)",
-		ConnectorFrontApi::func_stop_receiver, data);
-	proc_handler_add(
-		ph, "void func_stop_sender(in string input, out string output)",
-		ConnectorFrontApi::func_stop_sender, data);
-	proc_handler_add(
-		ph,
-		"void func_stop_consumer(in string input, out string output)",
-		ConnectorFrontApi::func_stop_consumer, data);
-	proc_handler_add(
-		ph,
-		"void func_stop_producer(in string input, out string output)",
-		ConnectorFrontApi::func_stop_producer, data);
+	proc_handler_add(ph, "void func_load_device(in string input, out string output)", ConnectorFrontApi::func_load_device, data);
+	proc_handler_add(ph, "void func_create_send_transport(in string input, out string output)", ConnectorFrontApi::func_create_send_transport, data);
+	proc_handler_add(ph, "void func_create_receive_transport(in string input, out string output)", ConnectorFrontApi::func_create_receive_transport, data);
+	proc_handler_add(ph, "void func_video_consumer_response(in string input, out string output)", ConnectorFrontApi::func_video_consumer_response, data);
+	proc_handler_add(ph, "void func_audio_consumer_response(in string input, out string output)", ConnectorFrontApi::func_audio_consumer_response, data);
+	proc_handler_add(ph, "void func_create_audio_producer(in string input, out string output)", ConnectorFrontApi::func_create_audio_producer, data);
+	proc_handler_add(ph, "void func_create_video_producer(in string input, out string output)", ConnectorFrontApi::func_create_video_producer, data);
+	proc_handler_add(ph, "void func_produce_result(in string input, out string output)", ConnectorFrontApi::func_produce_result, data);
+	proc_handler_add(ph, "void func_connect_result(in string input, out string output)", ConnectorFrontApi::func_connect_result, data);
+	proc_handler_add(ph, "void func_stop_receiver(in string input, out string output)", ConnectorFrontApi::func_stop_receiver, data);
+	proc_handler_add(ph, "void func_stop_sender(in string input, out string output)", ConnectorFrontApi::func_stop_sender, data);
+	proc_handler_add(ph, "void func_stop_consumer(in string input, out string output)", ConnectorFrontApi::func_stop_consumer, data);
+	proc_handler_add(ph, "void func_stop_producer(in string input, out string output)", ConnectorFrontApi::func_stop_producer, data);
 
 	obs_source_set_audio_active(source, true);
 
@@ -105,17 +67,14 @@ static void *msoup_create(obs_data_t *settings, obs_source_t *source)
 // Destroy
 static void msoup_destroy(void *data)
 {
-	MediaSoupInterface::ObsSourceInfo *sourceInfo =
-		static_cast<MediaSoupInterface::ObsSourceInfo *>(data);
+	MediaSoupInterface::ObsSourceInfo *sourceInfo = static_cast<MediaSoupInterface::ObsSourceInfo *>(data);
 	--MediaSoupInterface::instance().m_sourceCounter;
 
 	if (sourceInfo->m_obs_scene_texture != nullptr)
 		gs_texture_destroy(sourceInfo->m_obs_scene_texture);
 
-	MediaSoupInterface::instance().getTransceiver()->StopConsumerById(
-		sourceInfo->m_consumer_audio);
-	MediaSoupInterface::instance().getTransceiver()->StopConsumerById(
-		sourceInfo->m_consumer_video);
+	MediaSoupInterface::instance().getTransceiver()->StopConsumerById(sourceInfo->m_consumer_audio);
+	MediaSoupInterface::instance().getTransceiver()->StopConsumerById(sourceInfo->m_consumer_video);
 
 	// We're the last one, final cleanup
 	if (MediaSoupInterface::instance().m_sourceCounter <= 0)
@@ -127,20 +86,15 @@ static void msoup_destroy(void *data)
 // Video Render
 static void msoup_video_render(void *data, gs_effect_t *e)
 {
-	MediaSoupInterface::ObsSourceInfo *sourceInfo =
-		static_cast<MediaSoupInterface::ObsSourceInfo *>(data);
+	MediaSoupInterface::ObsSourceInfo *sourceInfo = static_cast<MediaSoupInterface::ObsSourceInfo *>(data);
 	UNREFERENCED_PARAMETER(e);
 
-	if (!MediaSoupInterface::instance().getTransceiver()->ConsumerReady(
-		    sourceInfo->m_consumer_video))
+	if (!MediaSoupInterface::instance().getTransceiver()->ConsumerReady(sourceInfo->m_consumer_video))
 		return;
 
 	//GetConsumerMailbox
 	std::unique_ptr<webrtc::VideoFrame> frame;
-	auto mailbox =
-		MediaSoupInterface::instance()
-			.getTransceiver()
-			->GetConsumerMailbox(sourceInfo->m_consumer_video);
+	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetConsumerMailbox(sourceInfo->m_consumer_video);
 
 	if (mailbox == nullptr)
 		return;
@@ -149,8 +103,7 @@ static void msoup_video_render(void *data, gs_effect_t *e)
 
 	// A new frame arrived, apply it to our cached texture with gs_texture_set_image
 	if (frame != nullptr)
-		MediaSoupInterface::instance().applyVideoFrameToObsTexture(
-			*frame, *sourceInfo);
+		MediaSoupInterface::instance().applyVideoFrameToObsTexture(*frame, *sourceInfo);
 
 	if (sourceInfo->m_obs_scene_texture == nullptr)
 		return;
@@ -168,19 +121,13 @@ static void msoup_video_render(void *data, gs_effect_t *e)
 		int xPos = 0;
 		int yPos = 0;
 
-		if (sourceInfo->m_textureWidth <
-		    MediaSoupInterface::instance().getHardObsTextureWidth()) {
-			int diff = MediaSoupInterface::instance()
-					   .getHardObsTextureWidth() -
-				   sourceInfo->m_textureWidth;
+		if (sourceInfo->m_textureWidth < MediaSoupInterface::instance().getHardObsTextureWidth()) {
+			int diff = MediaSoupInterface::instance().getHardObsTextureWidth() - sourceInfo->m_textureWidth;
 			xPos = diff / 2;
 		}
 
-		if (sourceInfo->m_textureHeight <
-		    MediaSoupInterface::instance().getHardObsTextureHeight()) {
-			int diff = MediaSoupInterface::instance()
-					   .getHardObsTextureHeight() -
-				   sourceInfo->m_textureHeight;
+		if (sourceInfo->m_textureHeight < MediaSoupInterface::instance().getHardObsTextureHeight()) {
+			int diff = MediaSoupInterface::instance().getHardObsTextureHeight() - sourceInfo->m_textureHeight;
 			yPos = diff / 2;
 		}
 
@@ -239,8 +186,7 @@ static void msoup_deactivate(void *data)
 	UNREFERENCED_PARAMETER(data);
 }
 
-static void msoup_enum_sources(void *data, obs_source_enum_proc_t cb,
-			       void *param)
+static void msoup_enum_sources(void *data, obs_source_enum_proc_t cb, void *param)
 {
 	UNREFERENCED_PARAMETER(data);
 	UNREFERENCED_PARAMETER(cb);
@@ -274,8 +220,7 @@ static void msoup_faudio_destroy(void *data)
 	UNUSED_PARAMETER(data);
 }
 
-static struct obs_audio_data *
-msoup_faudio_filter_audio(void *data, struct obs_audio_data *audio)
+static struct obs_audio_data *msoup_faudio_filter_audio(void *data, struct obs_audio_data *audio)
 {
 	auto source = static_cast<obs_source_t *>(data);
 	auto parent = obs_filter_get_parent(source);
@@ -286,26 +231,14 @@ msoup_faudio_filter_audio(void *data, struct obs_audio_data *audio)
 	if (obs_source_muted(parent))
 		return audio;
 
-	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(
-		    producerId))
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return audio;
 
-	if (auto mailbox = MediaSoupInterface::instance()
-				   .getTransceiver()
-				   ->GetProducerMailbox(producerId)) {
-		const struct audio_output_info *aoi =
-			audio_output_get_info(obs_get_audio());
-		mailbox->assignOutgoingAudioParams(
-			aoi->format, aoi->speakers,
-			static_cast<int>(
-				get_audio_size(aoi->format, aoi->speakers, 1)),
-			static_cast<int>(
-				audio_output_get_channels(obs_get_audio())),
-			static_cast<int>(
-				audio_output_get_sample_rate(obs_get_audio())));
+	if (auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId)) {
+		const struct audio_output_info *aoi = audio_output_get_info(obs_get_audio());
+		mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)), static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
 		mailbox->assignOutgoingVolume(obs_source_get_volume(parent));
-		mailbox->push_outgoing_audioFrame((const uint8_t **)audio->data,
-						  audio->frames);
+		mailbox->push_outgoing_audioFrame((const uint8_t **)audio->data, audio->frames);
 	}
 
 	return audio;
@@ -355,25 +288,19 @@ static obs_properties_t *msoup_fvideo_properties(void *data)
 	return props;
 }
 
-static struct obs_source_frame *
-msoup_fvideo_filter_video(void *data, struct obs_source_frame *frame)
+static struct obs_source_frame *msoup_fvideo_filter_video(void *data, struct obs_source_frame *frame)
 {
-	std::string producerId = obs_data_get_string(
-		static_cast<obs_data_t *>(data), "producerId");
+	std::string producerId = obs_data_get_string(static_cast<obs_data_t *>(data), "producerId");
 
-	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(
-		    producerId))
+	if (!MediaSoupInterface::instance().getTransceiver()->ProducerReady(producerId))
 		return frame;
 
-	auto mailbox = MediaSoupInterface::instance()
-			       .getTransceiver()
-			       ->GetProducerMailbox(producerId);
+	auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId);
 
 	if (mailbox == nullptr)
 		return frame;
 
-	rtc::scoped_refptr<webrtc::I420Buffer> dest =
-		mailbox->getProducerFrameBuffer(frame->width, frame->height);
+	rtc::scoped_refptr<webrtc::I420Buffer> dest = mailbox->getProducerFrameBuffer(frame->width, frame->height);
 
 	switch (frame->format) {
 	//VIDEO_FORMAT_Y800
@@ -382,82 +309,37 @@ msoup_fvideo_filter_video(void *data, struct obs_source_frame *frame)
 	//VIDEO_FORMAT_AYUV
 	//VIDEO_FORMAT_YVYU
 	case VIDEO_FORMAT_YUY2:
-		libyuv::YUY2ToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::YUY2ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_UYVY:
-		libyuv::UYVYToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::UYVYToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_RGBA:
-		libyuv::RGBAToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::RGBAToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_BGRA:
-		libyuv::ARGBToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_I422:
-		libyuv::I422ToI420(
-			frame->data[0], static_cast<int>(frame->linesize[0]),
-			frame->data[1], static_cast<int>(frame->linesize[1]),
-			frame->data[2], static_cast<int>(frame->linesize[2]),
-			dest->MutableDataY(), dest->StrideY(),
-			dest->MutableDataU(), dest->StrideU(),
-			dest->MutableDataV(), dest->StrideV(), dest->width(),
-			dest->height());
+		libyuv::I422ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), frame->data[2], static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(),
+				   dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_I444:
-		libyuv::I444ToI420(
-			frame->data[0], static_cast<int>(frame->linesize[0]),
-			frame->data[1], static_cast<int>(frame->linesize[1]),
-			frame->data[2], static_cast<int>(frame->linesize[2]),
-			dest->MutableDataY(), dest->StrideY(),
-			dest->MutableDataU(), dest->StrideU(),
-			dest->MutableDataV(), dest->StrideV(), dest->width(),
-			dest->height());
+		libyuv::I444ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), frame->data[2], static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(),
+				   dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_NV12:
-		libyuv::NV12ToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   frame->data[1],
-				   static_cast<int>(frame->linesize[1]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::NV12ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_BGRX:
-		libyuv::ARGBToI420(frame->data[0],
-				   static_cast<int>(frame->linesize[0]),
-				   dest->MutableDataY(), dest->StrideY(),
-				   dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(),
-				   dest->width(), dest->height());
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	default:
 		return frame;
 	}
 
 	if (frame->flip)
-		dest = webrtc::I420Buffer::Rotate(
-			*dest, webrtc::VideoRotation::kVideoRotation_180);
+		dest = webrtc::I420Buffer::Rotate(*dest, webrtc::VideoRotation::kVideoRotation_180);
 
 	mailbox->push_outgoing_videoFrame(dest);
 	return frame;
@@ -485,8 +367,7 @@ struct mediasoup_sync_filter {
 	gs_stagesurf_t *stagesurface{nullptr};
 };
 
-static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
-						  uint32_t cy);
+static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx, uint32_t cy);
 
 static const char *msoup_fsvideo_get_name(void *unused)
 {
@@ -506,8 +387,7 @@ static void *msoup_fsvideo_create(obs_data_t *settings, obs_source_t *source)
 // Destroy
 static void msoup_fsvideo_destroy(void *data)
 {
-	mediasoup_sync_filter *vars =
-		static_cast<mediasoup_sync_filter *>(data);
+	mediasoup_sync_filter *vars = static_cast<mediasoup_sync_filter *>(data);
 
 	gs_stagesurface_destroy(vars->stagesurface);
 	gs_texrender_destroy(vars->texrender);
@@ -518,23 +398,19 @@ static void msoup_fsvideo_destroy(void *data)
 // Add filter
 static void msoup_fsvideo_filter_add(void *data, obs_source_t *source)
 {
-	mediasoup_sync_filter *vars =
-		static_cast<mediasoup_sync_filter *>(data);
+	mediasoup_sync_filter *vars = static_cast<mediasoup_sync_filter *>(data);
 
 	if (vars)
-		obs_add_main_render_callback(
-			msoup_fsvideo_filter_offscreen_render, vars);
+		obs_add_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 }
 
 // Remove filter
 static void msoup_fsvideo_filter_remove(void *data, obs_source_t *source)
 {
-	mediasoup_sync_filter *vars =
-		static_cast<mediasoup_sync_filter *>(data);
+	mediasoup_sync_filter *vars = static_cast<mediasoup_sync_filter *>(data);
 
 	if (vars)
-		obs_remove_main_render_callback(
-			msoup_fsvideo_filter_offscreen_render, vars);
+		obs_remove_main_render_callback(msoup_fsvideo_filter_offscreen_render, vars);
 }
 
 static obs_properties_t *msoup_fsvideo_properties(void *data)
@@ -543,14 +419,12 @@ static obs_properties_t *msoup_fsvideo_properties(void *data)
 	return obs_properties_create();
 }
 
-static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
-						  uint32_t cy)
+static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx, uint32_t cy)
 {
 	UNUSED_PARAMETER(cx);
 	UNUSED_PARAMETER(cy);
 
-	mediasoup_sync_filter *vars =
-		static_cast<mediasoup_sync_filter *>(param);
+	mediasoup_sync_filter *vars = static_cast<mediasoup_sync_filter *>(param);
 	obs_source_t *target = obs_filter_get_parent(vars->source);
 
 	if (target == nullptr)
@@ -566,8 +440,7 @@ static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
 
 		// Create new
 		vars->texrender = gs_texrender_create(GS_BGRA, GS_ZS_NONE);
-		vars->stagesurface =
-			gs_stagesurface_create(width, height, GS_BGRA);
+		vars->stagesurface = gs_stagesurface_create(width, height, GS_BGRA);
 		vars->width = width;
 		vars->height = height;
 	}
@@ -580,8 +453,7 @@ static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
 		vec4_zero(&background);
 
 		gs_clear(GS_CLEAR_COLOR, &background, 0.0f, 0);
-		gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f,
-			 100.0f);
+		gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f, 100.0f);
 
 		gs_blend_state_push();
 		gs_blend_function(GS_BLEND_ONE, GS_BLEND_ZERO);
@@ -593,19 +465,16 @@ static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
 	}
 
 	obs_source_frame sframe{};
-	gs_stage_texture(vars->stagesurface,
-			 gs_texrender_get_texture(vars->texrender));
+	gs_stage_texture(vars->stagesurface, gs_texrender_get_texture(vars->texrender));
 
 	// Get pointer to data from gs
-	if (gs_stagesurface_map(vars->stagesurface, &sframe.data[0],
-				&sframe.linesize[0])) {
+	if (gs_stagesurface_map(vars->stagesurface, &sframe.data[0], &sframe.linesize[0])) {
 		// Use the data
 		sframe.width = vars->width;
 		sframe.height = vars->height;
 		sframe.flip = false;
 		sframe.format = VIDEO_FORMAT_BGRA;
-		msoup_fvideo_filter_video(obs_source_get_settings(vars->source),
-					  &sframe);
+		msoup_fvideo_filter_video(obs_source_get_settings(vars->source), &sframe);
 
 		// Release pointer to data from gs
 		gs_stagesurface_unmap(vars->stagesurface);
@@ -615,8 +484,7 @@ static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx,
 static void msoup_fsvideo_video_render(void *data, gs_effect_t *effect)
 {
 	UNUSED_PARAMETER(effect);
-	mediasoup_sync_filter *vars =
-		static_cast<mediasoup_sync_filter *>(data);
+	mediasoup_sync_filter *vars = static_cast<mediasoup_sync_filter *>(data);
 	obs_source_skip_video_filter(vars->source);
 }
 
@@ -643,9 +511,7 @@ bool obs_module_load(void)
 	mediasoup_connector.id = "mediasoupconnector";
 	mediasoup_connector.type = OBS_SOURCE_TYPE_INPUT;
 	mediasoup_connector.icon_type = OBS_ICON_TYPE_SLIDESHOW;
-	mediasoup_connector.output_flags =
-		OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_AUDIO |
-		OBS_SOURCE_DO_NOT_DUPLICATE | OBS_SOURCE_DO_NOT_SELF_MONITOR;
+	mediasoup_connector.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_AUDIO | OBS_SOURCE_DO_NOT_DUPLICATE | OBS_SOURCE_DO_NOT_SELF_MONITOR;
 	mediasoup_connector.get_name = msoup_getname;
 
 	mediasoup_connector.create = msoup_create;
@@ -685,8 +551,7 @@ bool obs_module_load(void)
 	struct obs_source_info mediasoup_filter_video = {};
 	mediasoup_filter_video.id = "mediasoupconnector_vfilter";
 	mediasoup_filter_video.type = OBS_SOURCE_TYPE_FILTER;
-	mediasoup_filter_video.output_flags = OBS_SOURCE_VIDEO |
-					      OBS_SOURCE_ASYNC;
+	mediasoup_filter_video.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_ASYNC;
 	mediasoup_filter_video.get_name = msoup_fvideo_get_name;
 	mediasoup_filter_video.create = msoup_fvideo_create;
 	mediasoup_filter_video.destroy = msoup_fvideo_destroy;
@@ -701,15 +566,13 @@ bool obs_module_load(void)
 	struct obs_source_info mediasoup_filter_video_s = {};
 	mediasoup_filter_video_s.id = "mediasoupconnector_vsfilter";
 	mediasoup_filter_video_s.type = OBS_SOURCE_TYPE_FILTER;
-	mediasoup_filter_video_s.output_flags = OBS_SOURCE_VIDEO |
-						OBS_SOURCE_SRGB;
+	mediasoup_filter_video_s.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_SRGB;
 	mediasoup_filter_video_s.get_name = msoup_fsvideo_get_name;
 	mediasoup_filter_video_s.create = msoup_fsvideo_create;
 	mediasoup_filter_video_s.destroy = msoup_fsvideo_destroy;
 	mediasoup_filter_video_s.update = msoup_fsvideo_update_settings;
 	mediasoup_filter_video_s.get_defaults = msoup_fsvideo_defaults;
-	mediasoup_filter_video_s.get_properties = msoup_fsvideo_properties,
-	mediasoup_filter_video_s.video_tick = msoup_fsvideo_video_tick;
+	mediasoup_filter_video_s.get_properties = msoup_fsvideo_properties, mediasoup_filter_video_s.video_tick = msoup_fsvideo_video_tick;
 	mediasoup_filter_video_s.video_render = msoup_fsvideo_video_render;
 	mediasoup_filter_video_s.filter_add = msoup_fsvideo_filter_add;
 	mediasoup_filter_video_s.filter_remove = msoup_fsvideo_filter_remove;

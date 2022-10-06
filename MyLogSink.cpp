@@ -14,8 +14,7 @@ MyLogSink::~MyLogSink()
 	//rtc::LogMessage::RemoveLogToStream(this);
 }
 
-void MyLogSink::OnLogMessage(const std::string &message,
-			     rtc::LoggingSeverity severity)
+void MyLogSink::OnLogMessage(const std::string &message, rtc::LoggingSeverity severity)
 {
 	int obs_log_level = LOG_DEBUG;
 
