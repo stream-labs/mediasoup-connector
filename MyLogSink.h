@@ -4,20 +4,19 @@
 
 #include <obs-module.h>
 
-class MyLogSink : public rtc::LogSink
-{
+class MyLogSink : public rtc::LogSink {
 public:
 	~MyLogSink();
 
-	static MyLogSink& instance()
+	static MyLogSink &instance()
 	{
 		static MyLogSink s;
 		return s;
 	}
 
 protected:
-	void OnLogMessage(const std::string& message) final;
-	void OnLogMessage(const std::string& message, rtc::LoggingSeverity severity) final;
+	void OnLogMessage(const std::string &message) final;
+	void OnLogMessage(const std::string &message, rtc::LoggingSeverity severity) final;
 
 private:
 	MyLogSink();
