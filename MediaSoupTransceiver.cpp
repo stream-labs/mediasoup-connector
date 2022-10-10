@@ -18,42 +18,37 @@
 #include "rtc_base/random.h"
 
 #ifdef _WIN32
-	#pragma comment(lib, "Secur32.lib")
-	#pragma comment(lib, "Winmm.lib")
-	#pragma comment(lib, "msdmo.lib")
-	#pragma comment(lib, "dmoguids.lib")
-	#pragma comment(lib, "wmcodecdspuuid.lib")
-	#pragma comment(lib, "strmiids.lib")
+#pragma comment(lib, "Secur32.lib")
+#pragma comment(lib, "Winmm.lib")
+#pragma comment(lib, "msdmo.lib")
+#pragma comment(lib, "dmoguids.lib")
+#pragma comment(lib, "wmcodecdspuuid.lib")
+#pragma comment(lib, "strmiids.lib")
 #endif
 
 /**
 * MediaSoupTransceiver
 */
 
-MediaSoupTransceiver::MediaSoupTransceiver() 
-{
-
-}
+MediaSoupTransceiver::MediaSoupTransceiver() {}
 
 MediaSoupTransceiver::~MediaSoupTransceiver()
 {
 	Stop();
 }
 
-bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_deviceRtpCapabilities, json& output_deviceSctpCapabilities)
+bool MediaSoupTransceiver::LoadDevice(json &routerRtpCapabilities, json &output_deviceRtpCapabilities, json &output_deviceSctpCapabilities)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_device != nullptr)
-	{
+	if (m_device != nullptr) {
 		m_lastErorMsg = "Device already exists";
 		return false;
 	}
 
 	m_device = std::make_unique<mediasoupclient::Device>();
 
-	try
-	{
+	try {
 		m_factory_Producer = CreateProducerFactory();
 
 		if (m_factory_Producer == nullptr)
@@ -63,7 +58,7 @@ bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_
 
 		if (m_factory_Consumer == nullptr)
 			return false;
-		
+
 		m_id = std::to_string(rtc::CreateRandomId());
 		m_consumerOptions.factory = m_factory_Consumer.get();
 		m_producerOptions.factory = m_factory_Producer.get();
@@ -71,9 +66,7 @@ bool MediaSoupTransceiver::LoadDevice(json& routerRtpCapabilities, json& output_
 
 		output_deviceRtpCapabilities = m_device->GetRtpCapabilities();
 		output_deviceSctpCapabilities = m_device->GetSctpCapabilities();
-	}
-	catch (...)
-	{
+	} catch (...) {
 		m_lastErorMsg = "Failed to load mediasoupclient::Device";
 		return false;
 	}
@@ -91,28 +84,19 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 	m_signalingThread_Producer->SetName("MSTproducer_sigthread", nullptr);
 	m_workerThread_Producer->SetName("MSTproducer_workthread", nullptr);
 
-	if (!m_networkThread_Producer->Start() || !m_signalingThread_Producer->Start() || !m_workerThread_Producer->Start())
-	{
+	if (!m_networkThread_Producer->Start() || !m_signalingThread_Producer->Start() || !m_workerThread_Producer->Start()) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateProducerFactory - webrtc thread start errored");
 		return nullptr;
 	}
-	
-	m_MyProducerAudioDeviceModule = new rtc::RefCountedObject<MyProducerAudioDeviceModule>{};
-	
-	auto factory = webrtc::CreatePeerConnectionFactory(
-		m_networkThread_Producer.get(),
-		m_workerThread_Producer.get(),
-		m_signalingThread_Producer.get(),
-		m_MyProducerAudioDeviceModule,
-		webrtc::CreateBuiltinAudioEncoderFactory(),
-		webrtc::CreateBuiltinAudioDecoderFactory(),
-		webrtc::CreateBuiltinVideoEncoderFactory(),
-		webrtc::CreateBuiltinVideoDecoderFactory(),
-		nullptr /*audio_mixer*/,
-		nullptr /*audio_processing*/);
 
-	if (!factory)
-	{
+	m_MyProducerAudioDeviceModule = new rtc::RefCountedObject<MyProducerAudioDeviceModule>{};
+
+	auto factory = webrtc::CreatePeerConnectionFactory(m_networkThread_Producer.get(), m_workerThread_Producer.get(), m_signalingThread_Producer.get(),
+							   m_MyProducerAudioDeviceModule, webrtc::CreateBuiltinAudioEncoderFactory(), webrtc::CreateBuiltinAudioDecoderFactory(),
+							   webrtc::CreateBuiltinVideoEncoderFactory(), webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/,
+							   nullptr /*audio_processing*/);
+
+	if (!factory) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateProducerFactory - webrtc error ocurred creating peerconnection factory");
 		return nullptr;
 	}
@@ -130,35 +114,24 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 	m_signalingThread_Consumer->SetName("MSTconsumer_sigthread", nullptr);
 	m_workerThread_Consumer->SetName("MSTconsumerr_workthread", nullptr);
 
-	if (!m_networkThread_Consumer->Start() || !m_signalingThread_Consumer->Start() || !m_workerThread_Consumer->Start())
-	{
+	if (!m_networkThread_Consumer->Start() || !m_signalingThread_Consumer->Start() || !m_workerThread_Consumer->Start()) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateConsumerFactory - webrtc thread start errored");
 		return nullptr;
 	}
 
-	std::thread thr([&]()
-		{
-			m_DefaultDeviceCore_TaskQueue = webrtc::CreateDefaultTaskQueueFactory();
-			m_DefaultDeviceCore = webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio, m_DefaultDeviceCore_TaskQueue.get());
-			
-		});
+	std::thread thr([&]() {
+		m_DefaultDeviceCore_TaskQueue = webrtc::CreateDefaultTaskQueueFactory();
+		m_DefaultDeviceCore = webrtc::AudioDeviceModule::Create(webrtc::AudioDeviceModule::kPlatformDefaultAudio, m_DefaultDeviceCore_TaskQueue.get());
+	});
 
 	thr.join();
 
-	auto factory = webrtc::CreatePeerConnectionFactory(
-		m_networkThread_Consumer.get(),
-		m_workerThread_Consumer.get(),
-		m_signalingThread_Consumer.get(),
-		m_DefaultDeviceCore,
-		webrtc::CreateBuiltinAudioEncoderFactory(),
-		webrtc::CreateBuiltinAudioDecoderFactory(),
-		webrtc::CreateBuiltinVideoEncoderFactory(),
-		webrtc::CreateBuiltinVideoDecoderFactory(),
-		nullptr /*audio_mixer*/,
-		nullptr /*audio_processing*/);
+	auto factory = webrtc::CreatePeerConnectionFactory(m_networkThread_Consumer.get(), m_workerThread_Consumer.get(), m_signalingThread_Consumer.get(), m_DefaultDeviceCore,
+							   webrtc::CreateBuiltinAudioEncoderFactory(), webrtc::CreateBuiltinAudioDecoderFactory(),
+							   webrtc::CreateBuiltinVideoEncoderFactory(), webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/,
+							   nullptr /*audio_processing*/);
 
-	if (!factory)
-	{
+	if (!factory) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateFactory - webrtc error ocurred creating peerconnection factory");
 		return nullptr;
 	}
@@ -166,57 +139,46 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 	return factory;
 }
 
-bool MediaSoupTransceiver::CreateReceiver(const std::string& recvTransportId, const json& iceParameters, const json& iceCandidates, const json& dtlsParameters, nlohmann::json* sctpParameters /*= nullptr*/, nlohmann::json* iceServers /*= nullptr*/)
+bool MediaSoupTransceiver::CreateReceiver(const std::string &recvTransportId, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters,
+					  nlohmann::json *sctpParameters /*= nullptr*/, nlohmann::json *iceServers /*= nullptr*/)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_recvTransport != nullptr)
-	{
+	if (m_recvTransport != nullptr) {
 		m_lastErorMsg = "Reciver transport already exists";
 		return false;
 	}
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	try
-	{
+	try {
 		m_consumerOptions.config.servers.clear();
 
-		if (iceServers != nullptr)
-		{
+		if (iceServers != nullptr) {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Using iceServers %s", iceServers->dump().c_str());
 
-			for (const auto& iceServerUri : *iceServers)
-			{
+			for (const auto &iceServerUri : *iceServers) {
 				webrtc::PeerConnectionInterface::IceServer iceServer;
 				iceServer.username = iceServerUri["username"].get<std::string>();
 				iceServer.password = iceServerUri["credential"].get<std::string>();
 				iceServer.urls = iceServerUri["urls"].get<std::vector<std::string>>();
 				m_consumerOptions.config.servers.push_back(iceServer);
 			}
-		}
-		else
-		{
+		} else {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Not using iceServers");
 		}
 
-		if (sctpParameters != nullptr)
-		{
+		if (sctpParameters != nullptr) {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Using sctpParameters %s", sctpParameters->dump().c_str());
 			m_recvTransport = m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, *sctpParameters, &m_consumerOptions);
-		}
-		else
-		{
+		} else {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Not using sctpParameters");
 			m_recvTransport = m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, &m_consumerOptions);
 		}
-	}
-	catch (...)
-	{
+	} catch (...) {
 		m_lastErorMsg = "Unable to create the receive transport";
 		return false;
 	}
@@ -224,48 +186,40 @@ bool MediaSoupTransceiver::CreateReceiver(const std::string& recvTransportId, co
 	return true;
 }
 
-bool MediaSoupTransceiver::CreateSender(const std::string& id, const json& iceParameters, const json& iceCandidates, const json& dtlsParameters, nlohmann::json* iceServers /*= nullptr*/)
+bool MediaSoupTransceiver::CreateSender(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters,
+					nlohmann::json *iceServers /*= nullptr*/)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_sendTransport != nullptr)
-	{
+	if (m_sendTransport != nullptr) {
 		m_lastErorMsg = "Send transport already exists";
 		return false;
 	}
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	try
-	{
+	try {
 		m_producerOptions.config.servers.clear();
 
-		if (iceServers != nullptr)
-		{
+		if (iceServers != nullptr) {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateSender - Using iceServers %s", iceServers->dump().c_str());
 
-			for (const auto& iceServerUri : *iceServers)
-			{
+			for (const auto &iceServerUri : *iceServers) {
 				webrtc::PeerConnectionInterface::IceServer iceServer;
 				iceServer.username = iceServerUri["username"].get<std::string>();
 				iceServer.password = iceServerUri["credential"].get<std::string>();
 				iceServer.urls = iceServerUri["urls"].get<std::vector<std::string>>();
 				m_producerOptions.config.servers.push_back(iceServer);
 			}
-		}
-		else
-		{
+		} else {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateSender - Not using iceServers");
 		}
 
 		m_sendTransport = m_device->CreateSendTransport(this, id, iceParameters, iceCandidates, dtlsParameters, &m_producerOptions);
-	}
-	catch (...)
-	{
+	} catch (...) {
 		m_lastErorMsg = "Unable to create the send transport";
 		return false;
 	}
@@ -273,64 +227,52 @@ bool MediaSoupTransceiver::CreateSender(const std::string& id, const json& icePa
 	return true;
 }
 
-bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string& id, const nlohmann::json* ecodings /*= nullptr*/, const nlohmann::json* codecOptions /*= nullptr*/, const nlohmann::json* codec /*= nullptr*/)
+bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string &id, const nlohmann::json *ecodings /*= nullptr*/, const nlohmann::json *codecOptions /*= nullptr*/,
+						    const nlohmann::json *codec /*= nullptr*/)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	if (m_factory_Producer == nullptr)
-	{
+	if (m_factory_Producer == nullptr) {
 		m_lastErorMsg = "Factory not yet created";
 		return false;
 	}
 
-	if (m_sendTransport == nullptr)
-	{
+	if (m_sendTransport == nullptr) {
 		m_lastErorMsg = "Transport not created";
 		return false;
 	}
 
-	if (m_device->CanProduce("video"))
-	{
+	if (m_device->CanProduce("video")) {
 		auto mailbox = std::make_shared<MediaSoupMailbox>();
 		auto videoTrack = CreateProducerVideoTrack(m_factory_Producer, std::to_string(rtc::CreateRandomId()), mailbox);
 
 		std::vector<webrtc::RtpEncodingParameters> encodings;
 
-		if (ecodings != nullptr)
-		{
-			for (auto& itr : *ecodings)
-			{
+		if (ecodings != nullptr) {
+			for (auto &itr : *ecodings) {
 				webrtc::RtpEncodingParameters option;
 				option.max_bitrate_bps = itr["maxBitrate"].get<int>();
 				option.scale_resolution_down_by = itr["scaleResolutionDownBy"].get<int>();
 				encodings.emplace_back(option);
 			}
-		}
-		else
-		{
+		} else {
 			encodings.emplace_back(webrtc::RtpEncodingParameters{});
 			encodings.emplace_back(webrtc::RtpEncodingParameters{});
 			encodings.emplace_back(webrtc::RtpEncodingParameters{});
 		}
 
-		if (auto ptr = m_sendTransport->Produce(this, videoTrack, &encodings, codecOptions, codec))
-		{
+		if (auto ptr = m_sendTransport->Produce(this, videoTrack, &encodings, codecOptions, codec)) {
 			AssignProducer(id, ptr, mailbox);
-		}
-		else
-		{
+		} else {
 			m_lastErorMsg = "MediaSoupTransceiver::CreateVideoProducerTrack - Transport failed to produce video";
 			return false;
 		}
-	}
-	else
-	{
+	} else {
 		m_lastErorMsg = "MediaSoupTransceiver::CreateVideoProducerTrack - Cannot produce video";
 		return false;
 	}
@@ -338,64 +280,53 @@ bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string& id, const
 	return true;
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackInterface> MediaSoupTransceiver::CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& label, std::shared_ptr<MediaSoupMailbox> ptr)
+rtc::scoped_refptr<webrtc::VideoTrackInterface> MediaSoupTransceiver::CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
+											       const std::string &label, std::shared_ptr<MediaSoupMailbox> ptr)
 {
 	// The factory handles cleanup of this cstyle pointer
-	auto videoTrackSource = new rtc::RefCountedObject<FrameGeneratorCapturerVideoTrackSource>(FrameGeneratorCapturerVideoTrackSource::Config(), webrtc::Clock::GetRealTimeClock(), false, ptr);
+	auto videoTrackSource =
+		new rtc::RefCountedObject<FrameGeneratorCapturerVideoTrackSource>(FrameGeneratorCapturerVideoTrackSource::Config(), webrtc::Clock::GetRealTimeClock(), false, ptr);
 	videoTrackSource->Start();
-	
+
 	return factory->CreateVideoTrack(rtc::CreateRandomUuid(), videoTrackSource);
 }
 
-bool MediaSoupTransceiver::CreateAudioProducerTrack(const std::string& id)
+bool MediaSoupTransceiver::CreateAudioProducerTrack(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	if (m_factory_Consumer == nullptr)
-	{
+	if (m_factory_Consumer == nullptr) {
 		m_lastErorMsg = "Factory not yet created";
 		return false;
 	}
 
-	if (m_sendingAudio)
-	{
+	if (m_sendingAudio) {
 		m_lastErorMsg = "Already producing audio";
 		return false;
 	}
 
-	if (m_device->CanProduce("audio"))
-	{
+	if (m_device->CanProduce("audio")) {
 		auto audioTrack = CreateProducerAudioTrack(m_factory_Producer, std::to_string(rtc::CreateRandomId()));
 
-		json codecOptions =
-		{
-			{ "opusStereo", true },
-			{ "opusDtx",	true }
-		};
+		json codecOptions = {{"opusStereo", true}, {"opusDtx", true}};
 
-		if (auto ptr = m_sendTransport->Produce(this, audioTrack, nullptr, &codecOptions, nullptr))
-		{
+		if (auto ptr = m_sendTransport->Produce(this, audioTrack, nullptr, &codecOptions, nullptr)) {
 			auto mailbox = std::make_shared<MediaSoupMailbox>();
 			AssignProducer(id, ptr, mailbox);
 
 			m_audioProducer = id;
 			m_sendingAudio = true;
 			m_audioThread = std::thread(&MediaSoupTransceiver::AudioThread, this, mailbox);
-		}
-		else
-		{
+		} else {
 			m_lastErorMsg = "MediaSoupTransceiver::CreateAudioProducerTrack - Transport failed to produce video";
 			return false;
 		}
-	}
-	else
-	{
+	} else {
 		m_lastErorMsg = "Cannot produce audio";
 		return false;
 	}
@@ -403,7 +334,8 @@ bool MediaSoupTransceiver::CreateAudioProducerTrack(const std::string& id)
 	return true;
 }
 
-rtc::scoped_refptr<webrtc::AudioTrackInterface> MediaSoupTransceiver::CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string& label)
+rtc::scoped_refptr<webrtc::AudioTrackInterface> MediaSoupTransceiver::CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
+											       const std::string &label)
 {
 	cricket::AudioOptions options;
 	options.highpass_filter = true;
@@ -419,30 +351,25 @@ rtc::scoped_refptr<webrtc::AudioTrackInterface> MediaSoupTransceiver::CreateProd
 	return factory->CreateAudioTrack(label, source);
 }
 
-bool MediaSoupTransceiver::CreateAudioConsumer(const std::string& id, const std::string& producerId, json* rtpParameters, obs_source_t* source)
+bool MediaSoupTransceiver::CreateAudioConsumer(const std::string &id, const std::string &producerId, json *rtpParameters, obs_source_t *source)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	if (m_recvTransport == nullptr)
-	{
+	if (m_recvTransport == nullptr) {
 		m_lastErorMsg = "Transport not created";
 		return false;
 	}
 
-	mediasoupclient::Consumer* consumer = nullptr;
+	mediasoupclient::Consumer *consumer = nullptr;
 
-	try
-	{
+	try {
 		consumer = m_recvTransport->Consume(this, id, producerId, "audio", rtpParameters);
-	}
-	catch (...)
-	{
+	} catch (...) {
 		m_lastErorMsg = "Unable to create the audio consumer";
 		return false;
 	}
@@ -453,70 +380,62 @@ bool MediaSoupTransceiver::CreateAudioConsumer(const std::string& id, const std:
 	audioSink->m_obs_source = source;
 
 	auto trackRaw = consumer->GetTrack();
-	dynamic_cast<webrtc::AudioTrackInterface*>(trackRaw)->AddSink(audioSink.get());
+	dynamic_cast<webrtc::AudioTrackInterface *>(trackRaw)->AddSink(audioSink.get());
 
 	AssignConsumer(id, consumer, std::move(audioSink));
 	return true;
 }
 
-bool MediaSoupTransceiver::CreateVideoConsumer(const std::string& id, const std::string& producerId, json* rtpParameters)
+bool MediaSoupTransceiver::CreateVideoConsumer(const std::string &id, const std::string &producerId, json *rtpParameters)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
-	if (m_device == nullptr)
-	{
+	if (m_device == nullptr) {
 		m_lastErorMsg = "Device not created";
 		return false;
 	}
 
-	if (m_recvTransport == nullptr)
-	{
+	if (m_recvTransport == nullptr) {
 		m_lastErorMsg = "Transport not created";
 		return false;
 	}
 
-	mediasoupclient::Consumer* consumer = nullptr;
+	mediasoupclient::Consumer *consumer = nullptr;
 
-	try
-	{
+	try {
 		consumer = m_recvTransport->Consume(this, id, producerId, "video", rtpParameters);
-	}
-	catch (...)
-	{
+	} catch (...) {
 		m_lastErorMsg = "Unable to create the video consumer";
 		return false;
 	}
-	
+
 	auto videoSink = std::make_unique<MyVideoSink>();
 	videoSink->m_mailbox = std::make_shared<MediaSoupMailbox>();
 	videoSink->m_consumerType = MediaSoupTransceiver::ConsumerType::ConsumerAudio;
 
 	auto trackRaw = consumer->GetTrack();
-	
+
 	rtc::VideoSinkWants videoSinkWants;
-	dynamic_cast<webrtc::VideoTrackInterface*>(trackRaw)->AddOrUpdateSink(videoSink.get(), videoSinkWants);
-	
+	dynamic_cast<webrtc::VideoTrackInterface *>(trackRaw)->AddOrUpdateSink(videoSink.get(), videoSinkWants);
+
 	AssignConsumer(id, consumer, std::move(videoSink));
 	return true;
 }
 
 // Fired for the first Transport::Consume() or Transport::Produce().
 // Update the already created remote transport with the local DTLS parameters.
-std::future<void> MediaSoupTransceiver::OnConnect(mediasoupclient::Transport* transport, const json& dtlsParameters)
+std::future<void> MediaSoupTransceiver::OnConnect(mediasoupclient::Transport *transport, const json &dtlsParameters)
 {
 	std::promise<void> promise;
 
-	if ((m_recvTransport && transport->GetId() == m_recvTransport->GetId()) || (m_sendTransport && transport->GetId() == m_sendTransport->GetId()))
-	{
+	if ((m_recvTransport && transport->GetId() == m_recvTransport->GetId()) || (m_sendTransport && transport->GetId() == m_sendTransport->GetId())) {
 		if (ConnectorFrontApiHelper::onConnect(m_id, transport->GetId(), dtlsParameters))
 			promise.set_value();
 		else
 			promise.set_exception(std::make_exception_ptr("OnConnect failed"));
 
 		m_dtlsParameters_local = dtlsParameters;
-	}
-	else
-	{
+	} else {
 		promise.set_exception(std::make_exception_ptr((MediaSoupTransceiver::m_lastErorMsg = "Unknown transport requested to connect").c_str()));
 	}
 
@@ -525,7 +444,8 @@ std::future<void> MediaSoupTransceiver::OnConnect(mediasoupclient::Transport* tr
 
 // Fired when a producer needs to be created in mediasoup.
 // Retrieve the remote producer ID and feed the caller with it.
-std::future<std::string> MediaSoupTransceiver::OnProduce(mediasoupclient::SendTransport* transport, const std::string& kind, nlohmann::json rtpParameters, const nlohmann::json& appData)
+std::future<std::string> MediaSoupTransceiver::OnProduce(mediasoupclient::SendTransport *transport, const std::string &kind, nlohmann::json rtpParameters,
+							 const nlohmann::json &appData)
 {
 	std::promise<std::string> promise;
 	std::string value;
@@ -538,31 +458,29 @@ std::future<std::string> MediaSoupTransceiver::OnProduce(mediasoupclient::SendTr
 	return promise.get_future();
 }
 
-std::future<std::string> MediaSoupTransceiver::OnProduceData(mediasoupclient::SendTransport* sendTransport, const nlohmann::json& sctpStreamParameters,  const std::string& label, const std::string& protocol, const nlohmann::json& appData)
-{ 
-	std::promise<std::string> promise; 
-	promise.set_value(""); 
-	return promise.get_future(); 
+std::future<std::string> MediaSoupTransceiver::OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters, const std::string &label,
+							     const std::string &protocol, const nlohmann::json &appData)
+{
+	std::promise<std::string> promise;
+	promise.set_value("");
+	return promise.get_future();
 };
 
 void MediaSoupTransceiver::AudioThread(std::shared_ptr<MediaSoupMailbox> mailbox)
 {
 	webrtc::Random random_generator_(1);
 
-	while (m_sendingAudio)
-	{
+	while (m_sendingAudio) {
 		std::vector<std::unique_ptr<MediaSoupMailbox::SoupSendAudioFrame>> frames;
 		mailbox->pop_outgoing_audioFrames(frames);
 
-		if (!frames.empty())
-		{
+		if (!frames.empty()) {
 			uint32_t unused = 0;
 
-			for (auto& itr : frames)
-				m_MyProducerAudioDeviceModule->PlayData(itr->audio_data.data(), itr->numFrames, itr->bytesPerSample, itr->numChannels, itr->samples_per_sec, 0, 0, 0, false, unused);			
-		}
-		else
-		{
+			for (auto &itr : frames)
+				m_MyProducerAudioDeviceModule->PlayData(itr->audio_data.data(), itr->numFrames, itr->bytesPerSample, itr->numChannels, itr->samples_per_sec, 0, 0,
+									0, false, unused);
+		} else {
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
@@ -579,8 +497,7 @@ void MediaSoupTransceiver::StopReceiveTransport()
 		std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 
 		// Cleanup the consumers attached to it
-		for (auto& itr : m_dataConsumers)
-		{
+		for (auto &itr : m_dataConsumers) {
 			if (itr.second.first != nullptr)
 				TryClose(itr.second.first);
 
@@ -602,7 +519,7 @@ void MediaSoupTransceiver::StopReceiveTransport()
 }
 
 void MediaSoupTransceiver::StopSendTransport()
-{	
+{
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
 	m_sendingAudio = false;
@@ -613,12 +530,11 @@ void MediaSoupTransceiver::StopSendTransport()
 	if (m_sendTransport)
 		m_sendTransport->Close();
 
-	{		
+	{
 		std::lock_guard<std::recursive_mutex> grd(m_producerMutex);
 
 		// Cleanup the producers attached to it
-		for (auto& itr : m_dataProducers)
-		{
+		for (auto &itr : m_dataProducers) {
 			TryClose(itr.second.first);
 			delete itr.second.first;
 		}
@@ -638,35 +554,29 @@ void MediaSoupTransceiver::StopSendTransport()
 	//m_workerThread_Producer = nullptr;
 }
 
-void MediaSoupTransceiver::TryClose(mediasoupclient::Producer* producer)
+void MediaSoupTransceiver::TryClose(mediasoupclient::Producer *producer)
 {
 	if (producer == nullptr)
 		return;
 
-	try
-	{
+	try {
 		// "May throw"
 		producer->Close();
-	}
-	catch (...)
-	{
+	} catch (...) {
 		blog(LOG_WARNING, "Exception closing Producer object %s", producer->GetId().c_str());
 	}
 }
 
-void MediaSoupTransceiver::TryClose(mediasoupclient::Consumer* dataConsumer)
+void MediaSoupTransceiver::TryClose(mediasoupclient::Consumer *dataConsumer)
 {
-	try
-	{
+	try {
 		// "May throw"
 		dataConsumer->Close();
-	}
-	catch (...)
-	{
+	} catch (...) {
 		blog(LOG_WARNING, "Exception closing Consumer object %s", dataConsumer->GetId().c_str());
 	}
 }
-                                                                            
+
 void MediaSoupTransceiver::Stop()
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
@@ -687,10 +597,9 @@ void MediaSoupTransceiver::Stop()
 
 	{
 		std::lock_guard<std::recursive_mutex> grd(m_producerMutex);
-		
+
 		// Cleanup the producers attached to it
-		for (auto& itr : m_dataProducers)
-		{
+		for (auto &itr : m_dataProducers) {
 			TryClose(itr.second.first);
 			delete itr.second.first;
 		}
@@ -701,8 +610,7 @@ void MediaSoupTransceiver::Stop()
 	{
 		std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 
-		for (auto& itr : m_dataConsumers)
-		{
+		for (auto &itr : m_dataConsumers) {
 			if (itr.second.first != nullptr)
 				TryClose(itr.second.first);
 
@@ -725,7 +633,7 @@ void MediaSoupTransceiver::Stop()
 	m_signalingThread_Consumer = nullptr;
 	m_workerThread_Consumer = nullptr;
 
-	{		
+	{
 		// The sinks are in here too
 		std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 		m_dataConsumers.clear();
@@ -754,7 +662,7 @@ bool MediaSoupTransceiver::ReceiverConnected()
 {
 	if (!ReceiverCreated())
 		return false;
-	
+
 	return GetConnectionState(m_recvTransport) == "completed";
 }
 
@@ -781,7 +689,7 @@ const std::string MediaSoupTransceiver::PopLastError()
 	return ret;
 }
 
-std::string MediaSoupTransceiver::GetConnectionState(mediasoupclient::Transport* transport)
+std::string MediaSoupTransceiver::GetConnectionState(mediasoupclient::Transport *transport)
 {
 	std::lock_guard<std::mutex> grd(m_stateMutex);
 	auto itr = m_connectionState.find(transport);
@@ -792,61 +700,57 @@ std::string MediaSoupTransceiver::GetConnectionState(mediasoupclient::Transport*
 	return "";
 }
 
-void MediaSoupTransceiver::OnConnectionStateChange(mediasoupclient::Transport* transport, const std::string& connectionState)
+void MediaSoupTransceiver::OnConnectionStateChange(mediasoupclient::Transport *transport, const std::string &connectionState)
 {
 	std::lock_guard<std::mutex> grd(m_stateMutex);
 	m_connectionState[transport] = connectionState;
 }
 
-void MediaSoupTransceiver::AssignProducer(const std::string& id, mediasoupclient::Producer* value, std::shared_ptr<MediaSoupMailbox> mailbox)
+void MediaSoupTransceiver::AssignProducer(const std::string &id, mediasoupclient::Producer *value, std::shared_ptr<MediaSoupMailbox> mailbox)
 {
-	if (id.empty())
-	{
+	if (id.empty()) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::AssignProducer - Empty ID");
 		return;
 	}
 
 	std::lock_guard<std::recursive_mutex> grd(m_producerMutex);
 	StopProducerById(id);
-	m_dataProducers[id] = { value, mailbox };
+	m_dataProducers[id] = {value, mailbox};
 }
 
-void MediaSoupTransceiver::AssignConsumer(const std::string& id, mediasoupclient::Consumer* value, std::unique_ptr<GenericSink> sink)
+void MediaSoupTransceiver::AssignConsumer(const std::string &id, mediasoupclient::Consumer *value, std::unique_ptr<GenericSink> sink)
 {
-	if (id.empty())
-	{
+	if (id.empty()) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::AssignConsumer - Empty ID");
 		return;
 	}
 
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 	StopConsumerById(id);
-	m_dataConsumers[id] = { value, std::move(sink) };
+	m_dataConsumers[id] = {value, std::move(sink)};
 }
 
-std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetProducerMailbox(const std::string& id)
+std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetProducerMailbox(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_producerMutex);
 
 	auto itr = m_dataProducers.find(id);
 
-	if (itr != m_dataProducers.end())
-	{
+	if (itr != m_dataProducers.end()) {
 		if (itr->second.first != nullptr)
 			return itr->second.second;
 	}
 
 	return nullptr;
 }
-	
-std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetConsumerMailbox(const std::string& id)
+
+std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetConsumerMailbox(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 
 	auto itr = m_dataConsumers.find(id);
 
-	if (itr != m_dataConsumers.end())
-	{
+	if (itr != m_dataConsumers.end()) {
 		if (itr->second.first != nullptr)
 			return itr->second.second->m_mailbox;
 	}
@@ -854,30 +758,28 @@ std::shared_ptr<MediaSoupMailbox> MediaSoupTransceiver::GetConsumerMailbox(const
 	return nullptr;
 }
 
-void MediaSoupTransceiver::StopProducerById(const std::string& id)
+void MediaSoupTransceiver::StopProducerById(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 	std::lock_guard<std::recursive_mutex> grd2(m_producerMutex);
 
 	auto itr = m_dataProducers.find(id);
 
-	if (itr != m_dataProducers.end())
-	{
+	if (itr != m_dataProducers.end()) {
 		TryClose(itr->second.first);
 		delete itr->second.first;
 		itr = m_dataProducers.erase(itr);
 	}
 }
 
-void MediaSoupTransceiver::StopConsumerById(const std::string& id)
+void MediaSoupTransceiver::StopConsumerById(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 	std::lock_guard<std::recursive_mutex> grd2(m_consumerMutex);
 
 	auto itr = m_dataConsumers.find(id);
 
-	if (itr != m_dataConsumers.end())
-	{
+	if (itr != m_dataConsumers.end()) {
 		if (itr->second.first != nullptr)
 			TryClose(itr->second.first);
 
@@ -886,30 +788,25 @@ void MediaSoupTransceiver::StopConsumerById(const std::string& id)
 	}
 }
 
-std::string MediaSoupTransceiver::StopConsumerByProducerId(const std::string& id)
+std::string MediaSoupTransceiver::StopConsumerByProducerId(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 	std::lock_guard<std::recursive_mutex> grd2(m_consumerMutex);
 	std::string result;
 
-	for (auto itr = m_dataConsumers.begin(); itr != m_dataConsumers.end();)
-	{
+	for (auto itr = m_dataConsumers.begin(); itr != m_dataConsumers.end();) {
 		// [] initialized an itr at some point leaving empty values
-		if (itr->second.first == nullptr)
-		{
+		if (itr->second.first == nullptr) {
 			itr = m_dataConsumers.erase(itr);
 			continue;
 		}
 
-		if (itr->second.first->GetProducerId() == id)
-		{
+		if (itr->second.first->GetProducerId() == id) {
 			result = itr->second.first->GetId();
 			TryClose(itr->second.first);
 			delete itr->second.first;
 			itr = m_dataConsumers.erase(itr);
-		}
-		else
-		{
+		} else {
 			++itr;
 		}
 	}
@@ -919,21 +816,17 @@ std::string MediaSoupTransceiver::StopConsumerByProducerId(const std::string& id
 
 // Webrtc's own threads can do this at any time for any number of reasons
 // It seems to destroy the object for us, so we're just keeping ourselves up to date with it
-void MediaSoupTransceiver::OnTransportClose(mediasoupclient::Consumer* consumer)
+void MediaSoupTransceiver::OnTransportClose(mediasoupclient::Consumer *consumer)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 
 	auto itr = m_dataConsumers.begin();
 
-	while (itr != m_dataConsumers.end())
-	{
-		if (itr->second.first != nullptr && itr->second.first->GetId() == consumer->GetId())
-		{
+	while (itr != m_dataConsumers.end()) {
+		if (itr->second.first != nullptr && itr->second.first->GetId() == consumer->GetId()) {
 			m_dataConsumers.erase(itr);
 			return;
-		}
-		else
-		{
+		} else {
 			++itr;
 		}
 	}
@@ -941,33 +834,29 @@ void MediaSoupTransceiver::OnTransportClose(mediasoupclient::Consumer* consumer)
 
 // Webrtc's own threads can do this at any time for any number of reasons
 // It seems to destroy the object for us, so we're just keeping ourselves up to date with it
-void MediaSoupTransceiver::OnTransportClose(mediasoupclient::Producer* producer)
+void MediaSoupTransceiver::OnTransportClose(mediasoupclient::Producer *producer)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_producerMutex);
 
 	auto itr = m_dataProducers.begin();
 
-	while (itr != m_dataProducers.end())
-	{
-		if (itr->second.first != nullptr && itr->second.first->GetId() == producer->GetId())
-		{
+	while (itr != m_dataProducers.end()) {
+		if (itr->second.first != nullptr && itr->second.first->GetId() == producer->GetId()) {
 			m_dataProducers.erase(itr);
 			return;
-		}
-		else
-		{
+		} else {
 			++itr;
 		}
 	}
 }
 
-bool MediaSoupTransceiver::ProducerReady(const std::string& id)
+bool MediaSoupTransceiver::ProducerReady(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 	return SenderConnected() && m_dataProducers[id].first != nullptr;
 }
 
-bool MediaSoupTransceiver::ConsumerReady(const std::string& id)
+bool MediaSoupTransceiver::ConsumerReady(const std::string &id)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 	return SenderConnected() && m_dataConsumers[id].first != nullptr;
@@ -977,11 +866,10 @@ bool MediaSoupTransceiver::ConsumerReadyAtLeastOne()
 {
 	if (!SenderConnected())
 		return false;
-	
+
 	std::lock_guard<std::recursive_mutex> grd(m_consumerMutex);
 
-	for (auto& itr : m_dataConsumers)
-	{
+	for (auto &itr : m_dataConsumers) {
 		if (itr.second.first != nullptr)
 			return true;
 	}
@@ -993,32 +881,39 @@ bool MediaSoupTransceiver::ConsumerReadyAtLeastOne()
 * Sinks 
 */
 
-void MediaSoupTransceiver::MyVideoSink::OnFrame(const webrtc::VideoFrame& video_frame)
+void MediaSoupTransceiver::MyVideoSink::OnFrame(const webrtc::VideoFrame &video_frame)
 {
 	// copy
 	m_mailbox->push_received_videoFrame(std::make_unique<webrtc::VideoFrame>(video_frame));
 }
 
-void MediaSoupTransceiver::MyAudioSink::OnData(const void* audio_data, int bits_per_sample, int sample_rate, size_t number_of_channels, size_t number_of_frames, absl::optional<int64_t> absolute_capture_timestamp_ms)
+void MediaSoupTransceiver::MyAudioSink::OnData(const void *audio_data, int bits_per_sample, int sample_rate, size_t number_of_channels, size_t number_of_frames,
+					       absl::optional<int64_t> absolute_capture_timestamp_ms)
 {
 	size_t number_of_bytes = 0;
-	
-	switch (bits_per_sample)
-	{
-	case 8: number_of_bytes = number_of_channels * number_of_frames * sizeof(int8_t); break;
-	case 16: number_of_bytes = number_of_channels * number_of_frames * sizeof(int16_t); break;
-	case 32: number_of_bytes = number_of_channels * number_of_frames * sizeof(int32_t); break;
-	default: return;
+
+	switch (bits_per_sample) {
+	case 8:
+		number_of_bytes = number_of_channels * number_of_frames * sizeof(int8_t);
+		break;
+	case 16:
+		number_of_bytes = number_of_channels * number_of_frames * sizeof(int16_t);
+		break;
+	case 32:
+		number_of_bytes = number_of_channels * number_of_frames * sizeof(int32_t);
+		break;
+	default:
+		return;
 	}
 
 	// Output to source
 	obs_source_audio sdata;
-	sdata.data[0] = (uint8_t*)audio_data;
+	sdata.data[0] = (uint8_t *)audio_data;
 	sdata.frames = uint32_t(number_of_frames);
 	sdata.speakers = static_cast<speaker_layout>(number_of_channels);
 	sdata.samples_per_sec = sample_rate;
 	sdata.format = MediaSoupTransceiver::GetDefaultAudioFormat();
-	
+
 	if (absolute_capture_timestamp_ms.has_value())
 		sdata.timestamp = absolute_capture_timestamp_ms.value();
 	else
@@ -1027,7 +922,7 @@ void MediaSoupTransceiver::MyAudioSink::OnData(const void* audio_data, int bits_
 	obs_source_output_audio(m_obs_source, &sdata);
 
 	// Workaround to mute webrtc's default playback
-	memset((void*)audio_data, 0, number_of_bytes);
+	memset((void *)audio_data, 0, number_of_bytes);
 }
 
 #endif
