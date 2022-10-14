@@ -66,8 +66,8 @@ void MediaSoupInterface::applyVideoFrameToObsTexture(webrtc::VideoFrame &frame, 
 
 	std::unique_ptr<uint8_t[]> abgrBuffer;
 	abgrBuffer.reset(new uint8_t[biSizeImage]);
-	libyuv::I420ToABGR(i420buffer->DataY(), i420buffer->StrideY(), i420buffer->DataU(), i420buffer->StrideU(), i420buffer->DataV(), i420buffer->StrideV(), abgrBuffer.get(),
-			   i420buffer->width() * biBitCount / 8, i420buffer->width(), i420buffer->height());
+	libyuv::I420ToABGR(i420buffer->DataY(), i420buffer->StrideY(), i420buffer->DataU(), i420buffer->StrideU(), i420buffer->DataV(), i420buffer->StrideV(),
+			   abgrBuffer.get(), i420buffer->width() * biBitCount / 8, i420buffer->width(), i420buffer->height());
 
 	ensureDrawTexture(i420buffer->width(), i420buffer->height(), sourceInfo);
 	gs_texture_set_image(sourceInfo.m_obs_scene_texture, abgrBuffer.get(), i420buffer->width() * 4, false);

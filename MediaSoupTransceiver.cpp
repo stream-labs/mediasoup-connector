@@ -92,9 +92,9 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 	m_MyProducerAudioDeviceModule = new rtc::RefCountedObject<MyProducerAudioDeviceModule>{};
 
 	auto factory = webrtc::CreatePeerConnectionFactory(m_networkThread_Producer.get(), m_workerThread_Producer.get(), m_signalingThread_Producer.get(),
-							   m_MyProducerAudioDeviceModule, webrtc::CreateBuiltinAudioEncoderFactory(), webrtc::CreateBuiltinAudioDecoderFactory(),
-							   webrtc::CreateBuiltinVideoEncoderFactory(), webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/,
-							   nullptr /*audio_processing*/);
+							   m_MyProducerAudioDeviceModule, webrtc::CreateBuiltinAudioEncoderFactory(),
+							   webrtc::CreateBuiltinAudioDecoderFactory(), webrtc::CreateBuiltinVideoEncoderFactory(),
+							   webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/, nullptr /*audio_processing*/);
 
 	if (!factory) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateProducerFactory - webrtc error ocurred creating peerconnection factory");
@@ -126,10 +126,10 @@ rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> MediaSoupTransceiver:
 
 	thr.join();
 
-	auto factory = webrtc::CreatePeerConnectionFactory(m_networkThread_Consumer.get(), m_workerThread_Consumer.get(), m_signalingThread_Consumer.get(), m_DefaultDeviceCore,
-							   webrtc::CreateBuiltinAudioEncoderFactory(), webrtc::CreateBuiltinAudioDecoderFactory(),
-							   webrtc::CreateBuiltinVideoEncoderFactory(), webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/,
-							   nullptr /*audio_processing*/);
+	auto factory = webrtc::CreatePeerConnectionFactory(m_networkThread_Consumer.get(), m_workerThread_Consumer.get(), m_signalingThread_Consumer.get(),
+							   m_DefaultDeviceCore, webrtc::CreateBuiltinAudioEncoderFactory(),
+							   webrtc::CreateBuiltinAudioDecoderFactory(), webrtc::CreateBuiltinVideoEncoderFactory(),
+							   webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /*audio_mixer*/, nullptr /*audio_processing*/);
 
 	if (!factory) {
 		blog(LOG_ERROR, "MediaSoupTransceiver::CreateFactory - webrtc error ocurred creating peerconnection factory");
@@ -173,10 +173,12 @@ bool MediaSoupTransceiver::CreateReceiver(const std::string &recvTransportId, co
 
 		if (sctpParameters != nullptr) {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Using sctpParameters %s", sctpParameters->dump().c_str());
-			m_recvTransport = m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, *sctpParameters, &m_consumerOptions);
+			m_recvTransport = m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, *sctpParameters,
+									&m_consumerOptions);
 		} else {
 			blog(LOG_DEBUG, "MediaSoupTransceiver::CreateReceiver - Not using sctpParameters");
-			m_recvTransport = m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, &m_consumerOptions);
+			m_recvTransport =
+				m_device->CreateRecvTransport(this, recvTransportId, iceParameters, iceCandidates, dtlsParameters, &m_consumerOptions);
 		}
 	} catch (...) {
 		m_lastErorMsg = "Unable to create the receive transport";
@@ -227,8 +229,8 @@ bool MediaSoupTransceiver::CreateSender(const std::string &id, const json &icePa
 	return true;
 }
 
-bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string &id, const nlohmann::json *ecodings /*= nullptr*/, const nlohmann::json *codecOptions /*= nullptr*/,
-						    const nlohmann::json *codec /*= nullptr*/)
+bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string &id, const nlohmann::json *ecodings /*= nullptr*/,
+						    const nlohmann::json *codecOptions /*= nullptr*/, const nlohmann::json *codec /*= nullptr*/)
 {
 	std::lock_guard<std::recursive_mutex> grd(m_transportMutex);
 
@@ -280,12 +282,13 @@ bool MediaSoupTransceiver::CreateVideoProducerTrack(const std::string &id, const
 	return true;
 }
 
-rtc::scoped_refptr<webrtc::VideoTrackInterface> MediaSoupTransceiver::CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
-											       const std::string &label, std::shared_ptr<MediaSoupMailbox> ptr)
+rtc::scoped_refptr<webrtc::VideoTrackInterface>
+MediaSoupTransceiver::CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label,
+					       std::shared_ptr<MediaSoupMailbox> ptr)
 {
 	// The factory handles cleanup of this cstyle pointer
-	auto videoTrackSource =
-		new rtc::RefCountedObject<FrameGeneratorCapturerVideoTrackSource>(FrameGeneratorCapturerVideoTrackSource::Config(), webrtc::Clock::GetRealTimeClock(), false, ptr);
+	auto videoTrackSource = new rtc::RefCountedObject<FrameGeneratorCapturerVideoTrackSource>(FrameGeneratorCapturerVideoTrackSource::Config(),
+												  webrtc::Clock::GetRealTimeClock(), false, ptr);
 	videoTrackSource->Start();
 
 	return factory->CreateVideoTrack(rtc::CreateRandomUuid(), videoTrackSource);
@@ -334,8 +337,8 @@ bool MediaSoupTransceiver::CreateAudioProducerTrack(const std::string &id)
 	return true;
 }
 
-rtc::scoped_refptr<webrtc::AudioTrackInterface> MediaSoupTransceiver::CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
-											       const std::string &label)
+rtc::scoped_refptr<webrtc::AudioTrackInterface>
+MediaSoupTransceiver::CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label)
 {
 	cricket::AudioOptions options;
 	options.highpass_filter = true;
@@ -458,8 +461,8 @@ std::future<std::string> MediaSoupTransceiver::OnProduce(mediasoupclient::SendTr
 	return promise.get_future();
 }
 
-std::future<std::string> MediaSoupTransceiver::OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters, const std::string &label,
-							     const std::string &protocol, const nlohmann::json &appData)
+std::future<std::string> MediaSoupTransceiver::OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters,
+							     const std::string &label, const std::string &protocol, const nlohmann::json &appData)
 {
 	std::promise<std::string> promise;
 	promise.set_value("");
@@ -478,8 +481,8 @@ void MediaSoupTransceiver::AudioThread(std::shared_ptr<MediaSoupMailbox> mailbox
 			uint32_t unused = 0;
 
 			for (auto &itr : frames)
-				m_MyProducerAudioDeviceModule->PlayData(itr->audio_data.data(), itr->numFrames, itr->bytesPerSample, itr->numChannels, itr->samples_per_sec, 0, 0,
-									0, false, unused);
+				m_MyProducerAudioDeviceModule->PlayData(itr->audio_data.data(), itr->numFrames, itr->bytesPerSample, itr->numChannels,
+									itr->samples_per_sec, 0, 0, 0, false, unused);
 		} else {
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}

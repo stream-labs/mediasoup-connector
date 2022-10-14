@@ -29,9 +29,9 @@ bool ConnectorFrontApiHelper::createReceiver(const std::string &params, calldata
 		} catch (...) {
 		}
 
-		if (MediaSoupInterface::instance().getTransceiver()->CreateReceiver(response["id"].get<std::string>(), response["iceParameters"], response["iceCandidates"],
-										    response["dtlsParameters"], sctpParameters.empty() ? nullptr : &sctpParameters,
-										    iceServers.empty() ? nullptr : &iceServers))
+		if (MediaSoupInterface::instance().getTransceiver()->CreateReceiver(
+			    response["id"].get<std::string>(), response["iceParameters"], response["iceCandidates"], response["dtlsParameters"],
+			    sctpParameters.empty() ? nullptr : &sctpParameters, iceServers.empty() ? nullptr : &iceServers))
 			return false;
 	} catch (...) {
 		blog(LOG_ERROR, "%s createReceiver exception", obs_module_description());
@@ -63,8 +63,9 @@ bool ConnectorFrontApiHelper::createSender(const std::string &params, calldata_t
 		} catch (...) {
 		}
 
-		if (!MediaSoupInterface::instance().getTransceiver()->CreateSender(response["id"].get<std::string>(), response["iceParameters"], response["iceCandidates"],
-										   response["dtlsParameters"], iceServers.empty() ? nullptr : &iceServers)) {
+		if (!MediaSoupInterface::instance().getTransceiver()->CreateSender(response["id"].get<std::string>(), response["iceParameters"],
+										   response["iceCandidates"], response["dtlsParameters"],
+										   iceServers.empty() ? nullptr : &iceServers)) {
 			blog(LOG_ERROR, "%s createSender CreateSender failed, error '%s'", obs_module_description(),
 			     MediaSoupInterface::instance().getTransceiver()->PopLastError().c_str());
 			return false;
@@ -83,7 +84,8 @@ bool ConnectorFrontApiHelper::createSender(const std::string &params, calldata_t
 // Creating a producer will do ::OnConnect ::Consume in same stack that does CreateAudioProducerTrack (or video)
 // Those must not return until the front end can do its job, and so we delegate the task into a background thread, entering a waiting state
 // Sadly this is a bit of a balancing act between the backend and frontend, not sure how else to handle this annoying scenario
-bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo &obsSourceInfo, const std::string &params, const std::string &kind, calldata_t *cd)
+bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo &obsSourceInfo, const std::string &params, const std::string &kind,
+					     calldata_t *cd)
 {
 	blog(LOG_DEBUG, "createConsumer start");
 
@@ -145,8 +147,8 @@ bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo &
 		MediaSoupInterface::instance().setThreadIsProgress(true);
 		std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, params_parsed, kind, obsSourceInfo.m_obs_source);
 
-		int64_t timeExpire =
-			getWaitTimeoutDurationSeconds() + std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+		int64_t timeExpire = getWaitTimeoutDurationSeconds() +
+				     std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
 		while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting()) {
 			// Timeout
@@ -154,7 +156,8 @@ bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo &
 				MediaSoupInterface::instance().setThreadIsProgress(false);
 				MediaSoupInterface::instance().resetThreadCache();
 				thr->join();
-				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %d seconds", obs_module_description(), getWaitTimeoutDurationSeconds());
+				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %d seconds", obs_module_description(),
+				     getWaitTimeoutDurationSeconds());
 				return false;
 			}
 
@@ -234,13 +237,15 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string &kind, calld
 				} catch (...) {
 				}
 
-				MediaSoupInterface::instance().getTransceiver()->CreateVideoProducerTrack(
-					producerId, ecodings.empty() ? nullptr : &ecodings, codecOptions.empty() ? nullptr : &codecOptions, codec.empty() ? nullptr : &codec);
+				MediaSoupInterface::instance().getTransceiver()->CreateVideoProducerTrack(producerId, ecodings.empty() ? nullptr : &ecodings,
+													  codecOptions.empty() ? nullptr : &codecOptions,
+													  codec.empty() ? nullptr : &codec);
 			} else {
 				blog(LOG_ERROR, "%s createProducerTrack unexpected kind %s", obs_module_description(), kind.c_str());
 			}
 		} catch (...) {
-			blog(LOG_ERROR, "%s createProducerTrack exception %s", obs_module_description(), MediaSoupInterface::instance().getTransceiver()->PopLastError().c_str());
+			blog(LOG_ERROR, "%s createProducerTrack exception %s", obs_module_description(),
+			     MediaSoupInterface::instance().getTransceiver()->PopLastError().c_str());
 		}
 
 		MediaSoupInterface::instance().setThreadIsProgress(false);
@@ -250,15 +255,18 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string &kind, calld
 	MediaSoupInterface::instance().setExpectingProduceFollowup(true);
 	std::unique_ptr<std::thread> thr = std::make_unique<std::thread>(func, kind, producerId, jsonInput);
 
-	int64_t timeExpire = getWaitTimeoutDurationSeconds() + std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	int64_t timeExpire =
+		getWaitTimeoutDurationSeconds() + std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
-	while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting() && !MediaSoupInterface::instance().isProduceWaiting()) {
+	while (MediaSoupInterface::instance().isThreadInProgress() && !MediaSoupInterface::instance().isConnectWaiting() &&
+	       !MediaSoupInterface::instance().isProduceWaiting()) {
 		// Timeout
 		if (timeExpire <= std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count()) {
 			MediaSoupInterface::instance().setThreadIsProgress(false);
 			MediaSoupInterface::instance().joinWaitingThread();
 			thr->join();
-			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %d seconds", obs_module_description(), getWaitTimeoutDurationSeconds());
+			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %d seconds", obs_module_description(),
+			     getWaitTimeoutDurationSeconds());
 			return false;
 		}
 
@@ -333,7 +341,8 @@ bool ConnectorFrontApiHelper::onConnect(const std::string &clientId, const std::
 	return false;
 }
 
-bool ConnectorFrontApiHelper::onProduce(const std::string &clientId, const std::string &transportId, const std::string &kind, const json &rtpParameters, std::string &output_value)
+bool ConnectorFrontApiHelper::onProduce(const std::string &clientId, const std::string &transportId, const std::string &kind, const json &rtpParameters,
+					std::string &output_value)
 {
 	json data;
 	data["clientId"] = clientId;

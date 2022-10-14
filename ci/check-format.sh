@@ -43,6 +43,8 @@ fi
 
 find . -type d \( \
     -path ./\*build -o \
+    -path ./mac -o \
+    -path ./scripts -o \
     -path ./cmake \
 \) -prune -false -type f -o \
     -name '*.h' -or \

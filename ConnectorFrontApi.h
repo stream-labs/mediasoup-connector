@@ -32,7 +32,8 @@ struct ConnectorFrontApiHelper {
 	static bool createReceiver(const std::string &params, calldata_t *cd);
 
 	static bool onConnect(const std::string &clientId, const std::string &transportId, const json &dtlsParameters);
-	static bool onProduce(const std::string &clientId, const std::string &transportId, const std::string &kind, const json &rtpParameters, std::string &output_value);
+	static bool onProduce(const std::string &clientId, const std::string &transportId, const std::string &kind, const json &rtpParameters,
+			      std::string &output_value);
 
 private:
 	static int64_t getWaitTimeoutDurationSeconds() { return int64_t(30); }
