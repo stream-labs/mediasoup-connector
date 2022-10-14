@@ -237,7 +237,8 @@ static struct obs_audio_data *msoup_faudio_filter_audio(void *data, struct obs_a
 	if (auto mailbox = MediaSoupInterface::instance().getTransceiver()->GetProducerMailbox(producerId)) {
 		const struct audio_output_info *aoi = audio_output_get_info(obs_get_audio());
 		mailbox->assignOutgoingAudioParams(aoi->format, aoi->speakers, static_cast<int>(get_audio_size(aoi->format, aoi->speakers, 1)),
-						   static_cast<int>(audio_output_get_channels(obs_get_audio())), static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
+						   static_cast<int>(audio_output_get_channels(obs_get_audio())),
+						   static_cast<int>(audio_output_get_sample_rate(obs_get_audio())));
 		mailbox->assignOutgoingVolume(obs_source_get_volume(parent));
 		mailbox->push_outgoing_audioFrame((const uint8_t **)audio->data, audio->frames);
 	}
@@ -310,38 +311,39 @@ static struct obs_source_frame *msoup_fvideo_filter_video(void *data, struct obs
 	//VIDEO_FORMAT_AYUV
 	//VIDEO_FORMAT_YVYU
 	case VIDEO_FORMAT_YUY2:
-		libyuv::YUY2ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::YUY2ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(),
+				   dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_UYVY:
-		libyuv::UYVYToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::UYVYToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(),
+				   dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_RGBA:
-		libyuv::RGBAToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::RGBAToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(),
+				   dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_BGRA:
-		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(),
+				   dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_I422:
 		libyuv::I422ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), frame->data[2],
-				   static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(),
-				   dest->StrideV(), dest->width(), dest->height());
+				   static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
+				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_I444:
 		libyuv::I444ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), frame->data[2],
-				   static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(),
-				   dest->StrideV(), dest->width(), dest->height());
+				   static_cast<int>(frame->linesize[2]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
+				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_NV12:
-		libyuv::NV12ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]), dest->MutableDataY(),
-				   dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::NV12ToI420(frame->data[0], static_cast<int>(frame->linesize[0]), frame->data[1], static_cast<int>(frame->linesize[1]),
+				   dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(), dest->MutableDataV(), dest->StrideV(),
+				   dest->width(), dest->height());
 		break;
 	case VIDEO_FORMAT_BGRX:
-		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(), dest->StrideU(),
-				   dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
+		libyuv::ARGBToI420(frame->data[0], static_cast<int>(frame->linesize[0]), dest->MutableDataY(), dest->StrideY(), dest->MutableDataU(),
+				   dest->StrideU(), dest->MutableDataV(), dest->StrideV(), dest->width(), dest->height());
 		break;
 	default:
 		return frame;
@@ -520,7 +522,8 @@ bool obs_module_load(void)
 	mediasoup_connector.id = "mediasoupconnector";
 	mediasoup_connector.type = OBS_SOURCE_TYPE_INPUT;
 	mediasoup_connector.icon_type = OBS_ICON_TYPE_SLIDESHOW;
-	mediasoup_connector.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_AUDIO | OBS_SOURCE_DO_NOT_DUPLICATE | OBS_SOURCE_DO_NOT_SELF_MONITOR;
+	mediasoup_connector.output_flags = OBS_SOURCE_VIDEO | OBS_SOURCE_CUSTOM_DRAW | OBS_SOURCE_AUDIO | OBS_SOURCE_DO_NOT_DUPLICATE |
+					   OBS_SOURCE_DO_NOT_SELF_MONITOR;
 	mediasoup_connector.get_name = msoup_getname;
 
 	mediasoup_connector.create = msoup_create;

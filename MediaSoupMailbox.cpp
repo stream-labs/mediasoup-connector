@@ -40,11 +40,11 @@ void MediaSoupMailbox::pop_receieved_videoFrames(std::unique_ptr<webrtc::VideoFr
 	output = std::move(m_received_video_frame);
 }
 
-void MediaSoupMailbox::assignOutgoingAudioParams(const audio_format audioformat, const speaker_layout speakerLayout, const int bytesPerSample, const int numChannels,
-						 const int samples_per_sec)
+void MediaSoupMailbox::assignOutgoingAudioParams(const audio_format audioformat, const speaker_layout speakerLayout, const int bytesPerSample,
+						 const int numChannels, const int samples_per_sec)
 {
-	if (m_obs_bytesPerSample == bytesPerSample && m_obs_numChannels == numChannels && m_obs_samples_per_sec == samples_per_sec && m_obs_audioformat == audioformat &&
-	    m_obs_speakerLayout == speakerLayout)
+	if (m_obs_bytesPerSample == bytesPerSample && m_obs_numChannels == numChannels && m_obs_samples_per_sec == samples_per_sec &&
+	    m_obs_audioformat == audioformat && m_obs_speakerLayout == speakerLayout)
 		return;
 
 	m_outgoing_audio_data.clear();
@@ -164,7 +164,8 @@ void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<Soup
 		// Avoid redundant work
 		if (m_volume == 1.f) {
 			// Format -> Mediasoup
-			if (audio_resampler_resample(m_to_mediasoup_resampler, array2d_int16_raw, &numFrames, &tOffset, array2d_float_planar_raw, framesPer10ms)) {
+			if (audio_resampler_resample(m_to_mediasoup_resampler, array2d_int16_raw, &numFrames, &tOffset, array2d_float_planar_raw,
+						     framesPer10ms)) {
 				ptr->audio_data.resize(framesPer10ms * m_obs_numChannels);
 				webrtc::Interleave((int16_t **)array2d_int16_raw, ptr->numFrames, ptr->numChannels, ptr->audio_data.data());
 			}
@@ -180,7 +181,8 @@ void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<Soup
 				*(cur++) *= m_volume;
 
 			// Float -> Mediasoup
-			if (audio_resampler_resample(m_from_float_to_mediasoup_resampler, array2d_int16_raw, &numFrames, &tOffset, array2d_float_raw, framesPer10ms)) {
+			if (audio_resampler_resample(m_from_float_to_mediasoup_resampler, array2d_int16_raw, &numFrames, &tOffset, array2d_float_raw,
+						     framesPer10ms)) {
 				ptr->audio_data.resize(framesPer10ms * m_obs_numChannels);
 				webrtc::Interleave((int16_t **)array2d_int16_raw, ptr->numFrames, ptr->numChannels, ptr->audio_data.data());
 			}

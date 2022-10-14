@@ -47,9 +47,10 @@ public:
 	~MediaSoupTransceiver();
 
 	bool LoadDevice(json &routerRtpCapabilities, json &output_deviceRtpCapabilities, json &outpudet_viceSctpCapabilities);
-	bool CreateReceiver(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters, nlohmann::json *sctpParameters = nullptr,
-			    nlohmann::json *iceServers = nullptr);
-	bool CreateSender(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters, nlohmann::json *iceServers = nullptr);
+	bool CreateReceiver(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters,
+			    nlohmann::json *sctpParameters = nullptr, nlohmann::json *iceServers = nullptr);
+	bool CreateSender(const std::string &id, const json &iceParameters, const json &iceCandidates, const json &dtlsParameters,
+			  nlohmann::json *iceServers = nullptr);
 	bool CreateAudioConsumer(const std::string &id, const std::string &producerId, json *rtpParameters, obs_source_t *source);
 	bool CreateVideoConsumer(const std::string &id, const std::string &producerId, json *rtpParameters);
 	bool CreateVideoProducerTrack(const std::string &id, const nlohmann::json *ebcodings = nullptr, const nlohmann::json *codecOptions = nullptr,
@@ -93,8 +94,8 @@ public:
 
 public:
 	// SendTransport
-	std::future<std::string> OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters, const std::string &label,
-					       const std::string &protocol, const nlohmann::json &appData) override;
+	std::future<std::string> OnProduceData(mediasoupclient::SendTransport *sendTransport, const nlohmann::json &sctpStreamParameters,
+					       const std::string &label, const std::string &protocol, const nlohmann::json &appData) override;
 	std::future<std::string> OnProduce(mediasoupclient::SendTransport * /*transport*/, const std::string &kind, nlohmann::json rtpParameters,
 					   const nlohmann::json &appData) override;
 
@@ -115,9 +116,10 @@ private:
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateProducerFactory();
 	rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> CreateConsumerFactory();
 
-	rtc::scoped_refptr<webrtc::AudioTrackInterface> CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label);
-	rtc::scoped_refptr<webrtc::VideoTrackInterface> CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory, const std::string &label,
-										 std::shared_ptr<MediaSoupMailbox> ptr);
+	rtc::scoped_refptr<webrtc::AudioTrackInterface> CreateProducerAudioTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
+										 const std::string &label);
+	rtc::scoped_refptr<webrtc::VideoTrackInterface> CreateProducerVideoTrack(rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> factory,
+										 const std::string &label, std::shared_ptr<MediaSoupMailbox> ptr);
 
 	json m_dtlsParameters_local;
 
