@@ -444,6 +444,10 @@ static void msoup_fsvideo_filter_offscreen_render(void *param, uint32_t cx, uint
 	uint32_t width = obs_source_get_base_width(vars->source);
 	uint32_t height = obs_source_get_base_height(vars->source);
 
+	// Small values cause encoding crashes in webrtc engine
+	if (width <= 64 || height <= 64)
+		return;
+
 	if (vars->width != width || vars->height != height) {
 		// Destroy old
 		gs_stagesurface_destroy(vars->stagesurface);
