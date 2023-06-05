@@ -38,7 +38,7 @@ bool ConnectorFrontApiHelper::createReceiver(const std::string &params, calldata
 		return false;
 	}
 
-	// Current not used by gui, but included if ever needed
+	// Currently not used by gui, but included if ever needed
 	json output;
 	output["receiverId"] = MediaSoupInterface::instance().getTransceiver()->GetReceiverId().c_str();
 	calldata_set_string(cd, "output", output.dump().c_str());
