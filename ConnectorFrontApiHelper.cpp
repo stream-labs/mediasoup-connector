@@ -29,7 +29,7 @@ bool ConnectorFrontApiHelper::createReceiver(const std::string &params, calldata
 		} catch (...) {
 		}
 
-		if (MediaSoupInterface::instance().getTransceiver()->CreateReceiver(
+		if (!MediaSoupInterface::instance().getTransceiver()->CreateReceiver(
 			    response["id"].get<std::string>(), response["iceParameters"], response["iceCandidates"], response["dtlsParameters"],
 			    sctpParameters.empty() ? nullptr : &sctpParameters, iceServers.empty() ? nullptr : &iceServers))
 			return false;
@@ -38,6 +38,7 @@ bool ConnectorFrontApiHelper::createReceiver(const std::string &params, calldata
 		return false;
 	}
 
+	// Currently not used by gui, but included if ever needed
 	json output;
 	output["receiverId"] = MediaSoupInterface::instance().getTransceiver()->GetReceiverId().c_str();
 	calldata_set_string(cd, "output", output.dump().c_str());
