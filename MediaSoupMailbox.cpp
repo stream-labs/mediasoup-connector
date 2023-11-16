@@ -148,7 +148,7 @@ void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<Soup
 		uint8_t *array2d_int16_raw[MAX_AV_PLANES];
 		uint8_t *array2d_float_raw[MAX_AV_PLANES];
 
-		for (size_t channel = 0; channel < m_obs_numChannels; ++channel) {
+		for (int channel = 0; channel < m_obs_numChannels; ++channel) {
 			const int bytesFromFloatBuffer = m_obs_bytesPerSample * framesPer10ms;
 
 			array2d_float_planar_raw[channel] = new uint8_t[bytesFromFloatBuffer];
@@ -188,7 +188,7 @@ void MediaSoupMailbox::pop_outgoing_audioFrames(std::vector<std::unique_ptr<Soup
 			}
 		}
 
-		for (size_t channel = 0; channel < m_obs_numChannels; ++channel)
+		for (int channel = 0; channel < m_obs_numChannels; ++channel)
 			delete[] array2d_float_planar_raw[channel];
 
 		output.push_back(std::move(ptr));

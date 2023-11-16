@@ -157,7 +157,7 @@ bool ConnectorFrontApiHelper::createConsumer(MediaSoupInterface::ObsSourceInfo &
 				MediaSoupInterface::instance().setThreadIsProgress(false);
 				MediaSoupInterface::instance().resetThreadCache();
 				thr->join();
-				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %d seconds", obs_module_description(),
+				blog(LOG_ERROR, "%s createConsumer timed out waiting, we waited %lld seconds", obs_module_description(),
 				     getWaitTimeoutDurationSeconds());
 				return false;
 			}
@@ -266,7 +266,7 @@ bool ConnectorFrontApiHelper::createProducerTrack(const std::string &kind, calld
 			MediaSoupInterface::instance().setThreadIsProgress(false);
 			MediaSoupInterface::instance().joinWaitingThread();
 			thr->join();
-			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %d seconds", obs_module_description(),
+			blog(LOG_ERROR, "%s createProducerTrack timed out waiting, we waited %lld seconds", obs_module_description(),
 			     getWaitTimeoutDurationSeconds());
 			return false;
 		}
