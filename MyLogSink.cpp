@@ -31,9 +31,12 @@ void MyLogSink::OnLogMessage(const std::string &message, rtc::LoggingSeverity se
 	case rtc::LoggingSeverity::LS_ERROR:
 		obs_log_level = LOG_ERROR;
 		break;
+	case rtc::LoggingSeverity::LS_NONE:
+		obs_log_level = LOG_DEBUG;
+		break;
 	}
 
-	blog(obs_log_level, std::string("webrtc: " + message).c_str());
+	blog(obs_log_level, "webrtc: %s", message.c_str());
 }
 
 void MyLogSink::OnLogMessage(const std::string &message) {}

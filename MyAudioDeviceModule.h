@@ -84,6 +84,5 @@ private:
 	bool rendering_ RTC_GUARDED_BY(lock_);
 	bool capturing_ RTC_GUARDED_BY(lock_);
 
-	webrtc::AudioTransport *audio_callback_{nullptr};
-	RTC_GUARDED_BY(lock_);
+	webrtc::AudioTransport *audio_callback_ RTC_GUARDED_BY(lock_) = nullptr;
 };

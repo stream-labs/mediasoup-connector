@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 3.22...3.25)
+
+legacy_check()
+
 # Project configuration.
 set(WEBRTC_INCLUDE_PATH "" CACHE STRING "webrtc include path")
 set(WEBRTC_LIB_PATH "" CACHE STRING "webrtc .lib path")
@@ -46,8 +50,8 @@ if (APPLE)
 	endforeach()
 endif()
 
-set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)	
-		
+set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)
+
 if(MSVC)
 	list(APPEND webrtc_COMMON_COMPILE_DEFS WEBRTC_WIN WIN32_LEAN_AND_MEAN)
 endif()
@@ -83,8 +87,16 @@ add_library(webrtc-testlibs STATIC
 
 # webrtc's warnings, we don't need to see them)
 if(MSVC)
-	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
+    # MSVC specific warning suppressions
+    target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
+elseif(APPLE)
+    # Apple Clang specific warning suppressions
+    target_compile_options(webrtc-testlibs PRIVATE "-Wno-unused-parameter")
+else()
+    # GCC/Clang on other systems
+    target_compile_options(webrtc-testlibs PRIVATE "-Wno-unused-parameter")
 endif()
+
 
 target_link_libraries(webrtc-testlibs
 	${WEBRTC_LIB_PATH})
@@ -97,8 +109,8 @@ target_compile_definitions(webrtc-testlibs PUBLIC ${webrtc_COMMON_COMPILE_DEFS})
 # -- mediasoup PLUGIN --
 # ----------------------
 
-project(mediasoup-connector)
-set(MODULE_DESCRIPTION "Streamlabs Join")
+#project(mediasoup-connector)
+#set(MODULE_DESCRIPTION "Streamlabs Join")
 
 if(MSVC)
 	set(mediasoup-connector_PLATFORM_DEPS
@@ -133,13 +145,18 @@ include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
-	
+
+add_library(OBS::mediasoup-connector ALIAS mediasoup-connector)
+
 if(MSVC)
 	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
+elseif(APPLE)
+	target_compile_options(mediasoup-connector PRIVATE "-Wno-unused-parameter")
 endif()
 
+
 target_link_libraries(mediasoup-connector
-	libobs
+	OBS::libobs
 	webrtc-testlibs
 	${WEBRTC_LIB_PATH}
 	${MEDIASOUP_LIB_PATH}
@@ -203,9 +220,10 @@ if(APPLE)
 	target_link_libraries(mediasoup-connector ${APPLE_ApplicationServices})
 	
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations")
-endif()	
+endif()
 
-#set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
-#set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+# set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
+# set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 
-setup_plugin_target(mediasoup-connector)
+# setup_plugin_target(mediasoup-connector)
+set_target_properties_obs(mediasoup-connector PROPERTIES FOLDER plugins PREFIX "")
