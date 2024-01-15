@@ -135,7 +135,7 @@ add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
 	
 if(MSVC)
-	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
+	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244)
 endif()
 
 target_link_libraries(mediasoup-connector
