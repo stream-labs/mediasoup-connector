@@ -46,8 +46,8 @@ if (APPLE)
 	endforeach()
 endif()
 
-set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)	
-		
+set(webrtc_COMMON_COMPILE_DEFS NOMINMAX)
+
 if(MSVC)
 	list(APPEND webrtc_COMMON_COMPILE_DEFS WEBRTC_WIN WIN32_LEAN_AND_MEAN)
 endif()
@@ -73,7 +73,7 @@ set(webrtc-test_SOURCES
 	${WEBRTC_INCLUDE_PATH}/test/testsupport/file_utils_override.cc
 	${WEBRTC_INCLUDE_PATH}/test/testsupport/ivf_video_frame_generator.cc
 	${WEBRTC_INCLUDE_PATH}/test/vcm_capturer.cc)
-	
+
 include_directories(${WEBRTC_INCLUDE_PATH})
 include_directories(${WEBRTC_INCLUDE_PATH}/third_party/abseil-cpp)
 include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
@@ -83,7 +83,7 @@ add_library(webrtc-testlibs STATIC
 
 # webrtc's warnings, we don't need to see them)
 if(MSVC)
-	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
+	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267 /wd4099)
 endif()
 
 target_link_libraries(webrtc-testlibs
@@ -133,9 +133,10 @@ include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
-	
+
 if(MSVC)
-	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100)
+    target_compile_options(mediasoup-connector PRIVATE /W3 /wd4100 /wd4244 /wd4099 "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /WX-)
+    target_link_options(mediasoup-connector PRIVATE /IGNORE:4099)
 endif()
 
 target_link_libraries(mediasoup-connector
@@ -203,7 +204,7 @@ if(APPLE)
 	target_link_libraries(mediasoup-connector ${APPLE_ApplicationServices})
 	
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations")
-endif()	
+endif()
 
 #set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
 #set_target_properties(mediasoup-connector PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
