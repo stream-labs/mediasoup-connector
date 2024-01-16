@@ -135,10 +135,10 @@ include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
 
-
 if(MSVC)
 	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4099)
     target_compile_options(mediasoup-connector PRIVATE /W3 /WX-)
+    target_link_options(mediasoup-connector PRIVATE /WX-)
 endif()
 
 target_link_libraries(mediasoup-connector
