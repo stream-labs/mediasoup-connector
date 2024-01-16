@@ -84,6 +84,7 @@ add_library(webrtc-testlibs STATIC
 # webrtc's warnings, we don't need to see them)
 if(MSVC)
 	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267 /wd4099)
+    target_compile_options(webrtc-testlibs PRIVATE /W3 /WX-)
 endif()
 
 target_link_libraries(webrtc-testlibs
@@ -133,9 +134,11 @@ include_directories(${WEBRTC_INCLUDE_PATH}/third_party/libyuv/include)
 
 add_library(mediasoup-connector MODULE
 	${mediasoup-connector_SOURCES})
-	
+
+
 if(MSVC)
 	target_compile_options(mediasoup-connector PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4099)
+    target_compile_options(mediasoup-connector PRIVATE /W3 /WX-)
 endif()
 
 target_link_libraries(mediasoup-connector
