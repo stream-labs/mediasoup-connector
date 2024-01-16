@@ -219,7 +219,7 @@ if(APPLE)
 	target_link_libraries(mediasoup-connector ${APPLE_Foundation})
 	target_link_libraries(mediasoup-connector ${APPLE_ApplicationServices})
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++ -Wno-deprecated-declarations -Wno-deprecated-builtins")
 endif()
 
 # set_target_properties(webrtc-testlibs PROPERTIES EXCLUDE_FROM_DEFAULT_BUILD_DEBUG TRUE)
