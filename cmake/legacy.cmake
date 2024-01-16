@@ -83,7 +83,7 @@ add_library(webrtc-testlibs STATIC
 
 # webrtc's warnings, we don't need to see them)
 if(MSVC)
-	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267)
+	target_compile_options(webrtc-testlibs PRIVATE "$<IF:$<CONFIG:Debug>,/MTd,/MT>" /wd4100 /wd4244 /wd4267 /wd4099)
 endif()
 
 target_link_libraries(webrtc-testlibs
